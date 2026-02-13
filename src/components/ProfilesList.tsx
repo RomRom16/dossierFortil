@@ -1,19 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Briefcase, Calendar, Award, Wrench, MapPin, Building } from 'lucide-react';
-import { supabase, Profile, Experience, Education, GeneralExpertise, Tool } from '../lib/supabase';
-
-type ProfileWithDetails = Profile & {
-  general_expertises: GeneralExpertise[];
-  tools: Tool[];
-  experiences: Experience[];
-  educations: Education[];
-};
+import { useAuth } from '../contexts/AuthContext';
+import { apiListProfiles, type ProfileWithDetails } from '../lib/api';
 
 type Props = {
   onBack: () => void;
 };
 
 export default function ProfilesList({ onBack }: Props) {
+  const { user, isBusinessManager, isAdmin } = useAuth();
   const [profiles, setProfiles] = useState<ProfileWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -24,52 +19,19 @@ export default function ProfilesList({ onBack }: Props) {
 
   const fetchProfiles = async () => {
     try {
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
+      if (!user) {
+        setProfiles([]);
+        setError('Utilisateur non connecté');
+        return;
+      }
 
-      if (profilesError) throw profilesError;
-
-      const profilesWithDetails = await Promise.all(
-        (profilesData || []).map(async profile => {
-          const [expertisesRes, toolsRes, experiencesRes, educationsRes] = await Promise.all([
-            supabase
-              .from('general_expertises')
-              .select('*')
-              .eq('profile_id', profile.id)
-              .order('created_at', { ascending: true }),
-            supabase
-              .from('tools')
-              .select('*')
-              .eq('profile_id', profile.id)
-              .order('created_at', { ascending: true }),
-            supabase
-              .from('experiences')
-              .select('*')
-              .eq('profile_id', profile.id)
-              .order('start_date', { ascending: false }),
-            supabase
-              .from('educations')
-              .select('*')
-              .eq('profile_id', profile.id)
-              .order('year', { ascending: false }),
-          ]);
-
-          return {
-            ...profile,
-            general_expertises: expertisesRes.data || [],
-            tools: toolsRes.data || [],
-            experiences: experiencesRes.data || [],
-            educations: educationsRes.data || [],
-          };
-        })
-      );
-
-      setProfiles(profilesWithDetails);
+      const data = await apiListProfiles(user);
+      setProfiles(data);
     } catch (err) {
       console.error('Error fetching profiles:', err);
-      setError('Erreur lors du chargement des profils');
+      const message =
+        err instanceof Error ? err.message : 'Erreur lors du chargement des profils';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -102,14 +64,22 @@ export default function ProfilesList({ onBack }: Props) {
         <div className="mb-6 flex items-center gap-4">
           <div className="h-1 flex-1 bg-gradient-to-r from-orange-500 via-green-500 to-cyan-500"></div>
           <h1 className="text-3xl font-bold text-gray-900">
-            Profils enregistrés ({profiles.length})
+            {isAdmin
+              ? `Tous les profils (${profiles.length})`
+              : isBusinessManager
+                ? `Mes candidats (${profiles.length})`
+                : `Mes dossiers de compétences (${profiles.length})`}
           </h1>
           <div className="h-1 flex-1 bg-gradient-to-l from-orange-500 via-green-500 to-cyan-500"></div>
         </div>
 
         {profiles.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-xl shadow-lg">
-            <p className="text-gray-500 text-lg">Aucun profil enregistré pour le moment</p>
+            <p className="text-gray-500 text-lg">
+              {isAdmin || isBusinessManager
+                ? 'Aucun candidat enregistré pour le moment.'
+                : 'Aucun dossier de compétences n’a encore été créé sur votre compte.'}
+            </p>
           </div>
         ) : (
           <div className="space-y-8">

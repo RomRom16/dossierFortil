@@ -1,6 +1,18 @@
 import { useState } from 'react';
-import { Plus, Trash2, Save, User, Briefcase, GraduationCap, Wrench, FileText, Calendar } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import {
+  Plus,
+  Trash2,
+  Save,
+  User,
+  Briefcase,
+  GraduationCap,
+  Wrench,
+  FileText,
+  Calendar,
+} from 'lucide-react';
+import { CVData, CVImport } from './CVImport';
+import { useAuth } from '../contexts/AuthContext';
+import { apiCreateProfile, type ProfilePayload } from '../lib/api';
 
 type ExperienceForm = {
   company: string;
@@ -53,6 +65,7 @@ type Props = {
 };
 
 export default function ProfileForm({ onViewProfiles }: Props) {
+  const { user } = useAuth();
   const [formData, setFormData] = useState<FormData>({
     full_name: '',
     roles: [''],
@@ -64,6 +77,7 @@ export default function ProfileForm({ onViewProfiles }: Props) {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [showCVImport, setShowCVImport] = useState(false);
 
   const handleAddItem = (field: 'roles' | 'general_expertises' | 'tools') => {
     setFormData(prev => ({
@@ -134,91 +148,45 @@ export default function ProfileForm({ onViewProfiles }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) {
+      setMessage({ type: 'error', text: 'Utilisateur non connecté. Impossible de créer le profil.' });
+      return;
+    }
     setIsSubmitting(true);
     setMessage(null);
 
     try {
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          full_name: formData.full_name,
-          roles: formData.roles.filter(r => r.trim()),
-          job_title: formData.roles.filter(r => r.trim()).join(' / ') || '',
-          candidate_description: formData.candidate_description,
-        })
-        .select()
-        .single();
+      const payload: ProfilePayload = {
+        full_name: formData.full_name.trim(),
+        roles: formData.roles.map(r => r.trim()).filter(Boolean),
+        candidate_description: formData.candidate_description,
+        general_expertises: formData.general_expertises.map(e => e.trim()).filter(Boolean),
+        tools: formData.tools.map(t => t.trim()).filter(Boolean),
+        experiences: formData.experiences
+          .filter(exp => exp.company.trim())
+          .map(exp => ({
+            company: exp.company.trim(),
+            location: exp.location.trim(),
+            start_date: exp.start_date,
+            end_date: exp.end_date || null,
+            job_title: exp.job_title.trim(),
+            sector: exp.sector.trim(),
+            project: exp.project.trim(),
+            responsibilities: exp.responsibilities.trim(),
+            technical_environment: exp.technical_environment.trim(),
+            expertises: [],
+            tools_used: [],
+          })),
+        educations: formData.educations
+          .filter(edu => edu.degree_or_certification.trim())
+          .map(edu => ({
+            degree_or_certification: edu.degree_or_certification.trim(),
+            institution: edu.institution.trim(),
+            year: edu.year || null,
+          })),
+      };
 
-      if (profileError) throw profileError;
-
-      const profileId = profile.id;
-
-      const expertisesData = formData.general_expertises
-        .filter(e => e.trim())
-        .map(expertise => ({
-          profile_id: profileId,
-          expertise: expertise.trim(),
-        }));
-
-      if (expertisesData.length > 0) {
-        const { error: expertisesError } = await supabase
-          .from('general_expertises')
-          .insert(expertisesData);
-        if (expertisesError) throw expertisesError;
-      }
-
-      const toolsData = formData.tools
-        .filter(t => t.trim())
-        .map(tool => ({
-          profile_id: profileId,
-          tool_name: tool.trim(),
-        }));
-
-      if (toolsData.length > 0) {
-        const { error: toolsError } = await supabase.from('tools').insert(toolsData);
-        if (toolsError) throw toolsError;
-      }
-
-      const experiencesData = formData.experiences
-        .filter(exp => exp.company.trim() && exp.start_date)
-        .map(exp => ({
-          profile_id: profileId,
-          company: exp.company.trim(),
-          location: exp.location.trim(),
-          start_date: exp.start_date,
-          end_date: exp.end_date || null,
-          job_title: exp.job_title.trim(),
-          sector: exp.sector.trim(),
-          project: exp.project.trim(),
-          responsibilities: exp.responsibilities.trim(),
-          technical_environment: exp.technical_environment.trim(),
-          context: '',
-          expertises: [],
-          tools_used: [],
-        }));
-
-      if (experiencesData.length > 0) {
-        const { error: experiencesError } = await supabase
-          .from('experiences')
-          .insert(experiencesData);
-        if (experiencesError) throw experiencesError;
-      }
-
-      const educationsData = formData.educations
-        .filter(edu => edu.degree_or_certification.trim())
-        .map(edu => ({
-          profile_id: profileId,
-          degree_or_certification: edu.degree_or_certification.trim(),
-          institution: edu.institution.trim(),
-          year: edu.year ? parseInt(edu.year) : null,
-        }));
-
-      if (educationsData.length > 0) {
-        const { error: educationsError } = await supabase
-          .from('educations')
-          .insert(educationsData);
-        if (educationsError) throw educationsError;
-      }
+      await apiCreateProfile(user, payload);
 
       setMessage({ type: 'success', text: 'Profil créé avec succès!' });
       setFormData({
@@ -242,6 +210,53 @@ export default function ProfileForm({ onViewProfiles }: Props) {
     }
   };
 
+  const handleCVImported = (data: CVData): void => {
+    // Pré-remplit le formulaire sans enregistrer en base
+    const roles = data.roles.map(r => r.trim()).filter(Boolean);
+    const generalExpertises = data.general_expertises.map(e => e.trim()).filter(Boolean);
+    const tools = data.tools.map(t => t.trim()).filter(Boolean);
+
+    const experiences: ExperienceForm[] =
+      data.experiences.length > 0
+        ? data.experiences.map(exp => ({
+            company: exp.company.trim(),
+            location: exp.location.trim(),
+            start_date: exp.start_date || '',
+            end_date: exp.end_date || '',
+            job_title: exp.job_title.trim(),
+            sector: exp.sector.trim(),
+            project: exp.project.trim(),
+            responsibilities: exp.responsibilities.trim(),
+            technical_environment: exp.technical_environment.trim(),
+          }))
+        : [{ ...initialExperience }];
+
+    const educations: EducationForm[] =
+      data.educations.length > 0
+        ? data.educations.map(edu => ({
+            degree_or_certification: edu.degree_or_certification.trim(),
+            year: edu.year || '',
+            institution: edu.institution.trim(),
+          }))
+        : [{ ...initialEducation }];
+
+    setFormData({
+      full_name: data.full_name.trim(),
+      roles: roles.length > 0 ? roles : [''],
+      candidate_description: data.candidate_description,
+      general_expertises: generalExpertises.length > 0 ? generalExpertises : [''],
+      tools: tools.length > 0 ? tools : [''],
+      experiences,
+      educations,
+    });
+
+    setShowCVImport(false);
+    setMessage({
+      type: 'success',
+      text: 'CV importé. Vérifiez et complétez les informations avant d’enregistrer le profil.',
+    });
+  };
+
   return (
     <div className="py-8 px-4">
       <div className="max-w-5xl mx-auto">
@@ -252,6 +267,30 @@ export default function ProfileForm({ onViewProfiles }: Props) {
               <h1 className="text-3xl font-bold text-gray-900">Nouveau Profil Professionnel</h1>
               <div className="h-1 flex-1 bg-gradient-to-l from-orange-500 via-green-500 to-cyan-500"></div>
             </div>
+
+            {showCVImport && (
+              <div className="mb-6">
+                <CVImport onCVImported={handleCVImported} />
+                <button
+                  type="button"
+                  onClick={() => setShowCVImport(false)}
+                  className="mt-4 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  Annuler
+                </button>
+              </div>
+            )}
+
+            {!showCVImport && (
+              <button
+                type="button"
+                onClick={() => setShowCVImport(true)}
+                className="flex items-center gap-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors mb-6"
+              >
+                <FileText className="w-5 h-5" />
+                Importer un CV (PDF)
+              </button>
+            )}
 
             {message && (
               <div
@@ -683,3 +722,4 @@ export default function ProfileForm({ onViewProfiles }: Props) {
     </div>
   );
 }
+

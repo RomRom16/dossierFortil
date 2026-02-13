@@ -28,7 +28,7 @@ export function UserHeader() {
             </div>
             <div className="flex flex-col">
               <p className="font-semibold text-gray-900 text-sm">
-                {user.user_metadata?.full_name || user.email?.split('@')[0]}
+                {user.full_name || user.email.split('@')[0]}
               </p>
               <p className="text-gray-500 text-xs">{user.email}</p>
             </div>

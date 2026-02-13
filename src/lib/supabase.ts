@@ -14,6 +14,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export type Profile = {
   id: string;
   full_name: string;
+  manager_id: string | null;
   roles: string[];
   job_title: string;
   candidate_description: string;
