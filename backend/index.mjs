@@ -110,6 +110,30 @@ try {
     console.log('Adding candidate_id column to profiles table...');
     db.prepare('ALTER TABLE profiles ADD COLUMN candidate_id text REFERENCES candidates(id) ON DELETE CASCADE').run();
   }
+
+  // Update user_roles table to include 'consultant' role
+  const tableSql = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='user_roles'").get()?.sql || "";
+  if (tableSql && !tableSql.includes('consultant')) {
+    console.log('Migrating user_roles table to allow consultant role...');
+    db.transaction(() => {
+      // 1. Rename old table
+      db.prepare('ALTER TABLE user_roles RENAME TO user_roles_old').run();
+      // 2. Create new table
+      db.prepare(`
+        CREATE TABLE user_roles (
+          user_id TEXT NOT NULL,
+          role TEXT NOT NULL CHECK (role IN ('business_manager','admin','consultant')),
+          PRIMARY KEY (user_id, role),
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `).run();
+      // 3. Copy data
+      db.prepare('INSERT INTO user_roles SELECT * FROM user_roles_old').run();
+      // 4. Drop old table
+      db.prepare('DROP TABLE user_roles_old').run();
+    })();
+    console.log('user_roles migration complete.');
+  }
 } catch (e) {
   console.error('Schema migration error:', e);
 }
@@ -288,6 +312,25 @@ app.get('/api/me', authMiddleware, (req, res) => {
     full_name: req.user.full_name,
     roles,
   });
+});
+
+app.get('/api/me/candidate', authMiddleware, (req, res) => {
+  // Un consultant est son propre candidat. On cherche par email.
+  let candidate = db.prepare('SELECT * FROM candidates WHERE email = ?').get(req.user.email);
+
+  if (!candidate) {
+    // On crée un candidat pour lui-même
+    const id = randomUUID();
+    const createdAt = now();
+    db.prepare(`
+      INSERT INTO candidates (id, manager_id, full_name, email, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(id, req.user.id, req.user.full_name, req.user.email, createdAt, createdAt);
+
+    candidate = db.prepare('SELECT * FROM candidates WHERE id = ?').get(id);
+  }
+
+  res.json(candidate);
 });
 
 // --- ADMIN: Gestion des utilisateurs ---

@@ -9,7 +9,8 @@ type Props = {
 };
 
 export function CandidatesList({ onSelectCandidate }: Props) {
-    const { user } = useAuth();
+    const { user, isAdmin, isBusinessManager } = useAuth();
+    const canCreate = isAdmin || isBusinessManager;
     const [candidates, setCandidates] = useState<Candidate[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -57,8 +58,12 @@ export function CandidatesList({ onSelectCandidate }: Props) {
             {/* Header Actions */}
             <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 mb-1">Mes Candidats</h1>
-                    <p className="text-gray-500">Gérez votre vivier de talents et leurs dossiers</p>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-1">
+                        {canCreate ? 'Mes Candidats' : 'Liste des Candidats'}
+                    </h1>
+                    <p className="text-gray-500">
+                        {canCreate ? 'Gérez votre vivier de talents et leurs dossiers' : 'Consultez les dossiers de compétences'}
+                    </p>
                 </div>
 
                 <div className="flex gap-3 w-full md:w-auto">
@@ -72,13 +77,15 @@ export function CandidatesList({ onSelectCandidate }: Props) {
                             className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                         />
                     </div>
-                    <button
-                        onClick={() => setShowCreateModal(true)}
-                        className="btn-primary flex items-center gap-2"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Nouveau Candidat
-                    </button>
+                    {canCreate && (
+                        <button
+                            onClick={() => setShowCreateModal(true)}
+                            className="btn-primary flex items-center gap-2"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Nouveau Candidat
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -89,10 +96,14 @@ export function CandidatesList({ onSelectCandidate }: Props) {
                         <Users className="w-8 h-8 text-orange-500" />
                     </div>
                     <h3 className="text-lg font-medium text-gray-900 mb-1">Aucun candidat trouvé</h3>
-                    <p className="text-gray-500 mb-4">Commencez par ajouter votre premier candidat</p>
-                    <button onClick={() => setShowCreateModal(true)} className="text-orange-600 font-medium hover:underline">
-                        Créer un candidat
-                    </button>
+                    <p className="text-gray-500 mb-4 font-semibold">
+                        {canCreate ? 'Commencez par ajouter votre premier candidat' : "Vous n'avez pas encore de candidat assigné."}
+                    </p>
+                    {canCreate && (
+                        <button onClick={() => setShowCreateModal(true)} className="text-orange-600 font-medium hover:underline">
+                            Créer un candidat
+                        </button>
+                    )}
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

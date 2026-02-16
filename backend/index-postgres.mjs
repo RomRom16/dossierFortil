@@ -290,6 +290,27 @@ app.get('/api/user/roles', authMiddleware, async (req, res) => {
     }
 });
 
+app.get('/api/me/candidate', authMiddleware, async (req, res) => {
+    try {
+        let candidate = await sql`SELECT * FROM candidates WHERE email = ${req.user.email}`;
+
+        if (candidate.length === 0) {
+            const id = randomUUID();
+            const timestamp = new Date();
+            await sql`
+                INSERT INTO candidates (id, manager_id, full_name, email, created_at, updated_at)
+                VALUES (${id}, ${req.user.id}, ${req.user.full_name}, ${req.user.email}, ${timestamp}, ${timestamp})
+            `;
+            candidate = await sql`SELECT * FROM candidates WHERE id = ${id}`;
+        }
+
+        res.json(candidate[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
 // Get all candidates
 app.get('/api/candidates', authMiddleware, async (req, res) => {
     try {

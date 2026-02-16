@@ -224,6 +224,14 @@ export async function apiGetMe(user: AppUser): Promise<{ roles: string[] }> {
   return { roles: data.roles ?? [] };
 }
 
+export async function apiGetMyCandidate(user: AppUser): Promise<Candidate> {
+  const res = await fetch(`${API_URL}/me/candidate`, {
+    headers: authHeaders(user),
+  });
+  if (!res.ok) throw new Error('Erreur lors de la récupération de votre profil candidat');
+  return res.json();
+}
+
 export type AdminUser = {
   id: string;
   email: string;

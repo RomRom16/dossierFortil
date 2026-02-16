@@ -3,7 +3,7 @@ import type { ProfileWithDetails } from '../lib/api';
 
 type Props = {
     profile: ProfileWithDetails;
-    onDeleteClick: (profile: ProfileWithDetails) => void;
+    onDeleteClick?: (profile: ProfileWithDetails) => void;
 };
 
 export function DossierCard({ profile, onDeleteClick }: Props) {
@@ -39,13 +39,15 @@ export function DossierCard({ profile, onDeleteClick }: Props) {
                         {new Date(profile.updated_at).toLocaleDateString()}
                     </span>
 
-                    <button
-                        onClick={(e) => { e.stopPropagation(); onDeleteClick(profile); }}
-                        className="text-gray-300 hover:text-red-500 p-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all"
-                        title="Supprimer le dossier"
-                    >
-                        <Trash2 className="w-4 h-4" />
-                    </button>
+                    {onDeleteClick && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onDeleteClick(profile); }}
+                            className="text-gray-300 hover:text-red-500 p-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all"
+                            title="Supprimer le dossier"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </button>
+                    )}
                 </div>
             </div>
         </div>

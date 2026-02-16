@@ -7,13 +7,14 @@ import { ConfirmDialog } from './ConfirmDialog';
 
 type Props = {
     candidateId: string;
-    onBack: () => void;
+    onBack?: () => void;
     onCreateDossier: (name: string) => void;
 };
 
 export function CandidateDetails({ candidateId, onBack, onCreateDossier }: Props) {
-    const { user } = useAuth();
+    const { user, isAdmin, isBusinessManager } = useAuth();
     const [data, setData] = useState<CandidateWithProfiles | null>(null);
+    const canManage = isAdmin || isBusinessManager || (data?.email === user?.email);
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState({ full_name: '', email: '', phone: '' });
@@ -49,7 +50,7 @@ export function CandidateDetails({ candidateId, onBack, onCreateDossier }: Props
         try {
             await apiDeleteCandidate(user!, candidateId);
             setShowDeleteCandidateConfirm(false);
-            onBack();
+            onBack?.();
         } catch (err) {
             setShowDeleteCandidateConfirm(false);
             alert('Erreur: Impossible de supprimer ce candidat. Vérifiez que vous avez les droits nécessaires.');
@@ -113,13 +114,15 @@ export function CandidateDetails({ candidateId, onBack, onCreateDossier }: Props
                 onCancel={() => setDossierToDelete(null)}
             />
 
-            <button
-                onClick={onBack}
-                className="mb-6 flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors"
-            >
-                <ArrowLeft className="w-4 h-4" />
-                Retour aux candidats
-            </button>
+            {onBack && (
+                <button
+                    onClick={onBack}
+                    className="mb-6 flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors"
+                >
+                    <ArrowLeft className="w-4 h-4" />
+                    Retour aux candidats
+                </button>
+            )}
 
             {/* Header Card */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden mb-8">
@@ -132,20 +135,24 @@ export function CandidateDetails({ candidateId, onBack, onCreateDossier }: Props
                     <div className="absolute top-4 right-4 flex gap-2">
                         {!isEditing ? (
                             <>
-                                <button
-                                    onClick={() => setIsEditing(true)}
-                                    className="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-lg text-sm font-medium backdrop-blur-sm flex items-center gap-2 transition-colors"
-                                >
-                                    <Edit2 className="w-4 h-4" />
-                                    Modifier
-                                </button>
-                                <button
-                                    onClick={() => setShowDeleteCandidateConfirm(true)}
-                                    className="bg-white/20 hover:bg-red-500 text-white px-3 py-1.5 rounded-lg text-sm font-medium backdrop-blur-sm flex items-center gap-2 transition-colors"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                    Supprimer
-                                </button>
+                                {canManage && (
+                                    <>
+                                        <button
+                                            onClick={() => setIsEditing(true)}
+                                            className="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-lg text-sm font-medium backdrop-blur-sm flex items-center gap-2 transition-colors"
+                                        >
+                                            <Edit2 className="w-4 h-4" />
+                                            Modifier
+                                        </button>
+                                        <button
+                                            onClick={() => setShowDeleteCandidateConfirm(true)}
+                                            className="bg-white/20 hover:bg-red-500 text-white px-3 py-1.5 rounded-lg text-sm font-medium backdrop-blur-sm flex items-center gap-2 transition-colors"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                            Supprimer
+                                        </button>
+                                    </>
+                                )}
                             </>
                         ) : (
                             <>
@@ -188,13 +195,15 @@ export function CandidateDetails({ candidateId, onBack, onCreateDossier }: Props
                                 </span>
                             </p>
                         </div>
-                        <button
-                            onClick={() => onCreateDossier(data.full_name)}
-                            className="btn-primary flex items-center gap-2"
-                        >
-                            <Plus className="w-4 h-4" />
-                            Nouveau Dossier
-                        </button>
+                        {canManage && (
+                            <button
+                                onClick={() => onCreateDossier(data.full_name)}
+                                className="btn-primary flex items-center gap-2"
+                            >
+                                <Plus className="w-4 h-4" />
+                                Nouveau Dossier
+                            </button>
+                        )}
                     </div>
 
                     {/* Meta Grid */}
@@ -259,14 +268,20 @@ export function CandidateDetails({ candidateId, onBack, onCreateDossier }: Props
             {data.profiles.length === 0 ? (
                 <div className="text-center py-12 bg-white rounded-xl border border-dashed border-gray-300">
                     <p className="text-gray-500">Aucun dossier créé pour ce candidat.</p>
-                    <button onClick={() => onCreateDossier(data.full_name)} className="text-orange-600 font-medium mt-2 hover:underline">
-                        Créer le premier dossier
-                    </button>
+                    {canManage && (
+                        <button onClick={() => onCreateDossier(data.full_name)} className="text-orange-600 font-medium mt-2 hover:underline">
+                            Créer le premier dossier
+                        </button>
+                    )}
                 </div>
             ) : (
                 <div className="space-y-6">
                     {data.profiles.map(p => (
-                        <DossierCard key={p.id} profile={p} onDeleteClick={setDossierToDelete} />
+                        <DossierCard
+                            key={p.id}
+                            profile={p}
+                            onDeleteClick={canManage ? setDossierToDelete : undefined}
+                        />
                     ))}
                 </div>
             )}

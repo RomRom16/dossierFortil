@@ -7,7 +7,7 @@ type Props = {
 };
 
 export function UserHeader({ onNavigateDashboard, onNavigateAdmin }: Props) {
-  const { user, signOut, isAdmin } = useAuth();
+  const { user, signOut, isAdmin, isBusinessManager } = useAuth();
 
   const handleSignOut = async () => {
     try {
@@ -33,8 +33,17 @@ export function UserHeader({ onNavigateDashboard, onNavigateAdmin }: Props) {
                 onClick={onNavigateDashboard}
                 className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors text-sm font-medium"
               >
-                <LayoutDashboard className="w-4 h-4" />
-                Tableau de bord
+                {isAdmin || isBusinessManager ? (
+                  <>
+                    <LayoutDashboard className="w-4 h-4" />
+                    Tableau de bord
+                  </>
+                ) : (
+                  <>
+                    <User className="w-4 h-4" />
+                    Mon Profil
+                  </>
+                )}
               </button>
             )}
 
