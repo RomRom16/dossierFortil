@@ -224,3 +224,54 @@ export async function apiGetMe(user: AppUser): Promise<{ roles: string[] }> {
   return { roles: data.roles ?? [] };
 }
 
+export type AdminUser = {
+  id: string;
+  email: string;
+  full_name: string;
+  roles: string[];
+};
+
+export async function apiAdminListUsers(user: AppUser): Promise<AdminUser[]> {
+  const res = await fetch(`${API_URL}/admin/users`, {
+    headers: authHeaders(user),
+  });
+  if (!res.ok) throw new Error('Erreur lors du chargement des utilisateurs');
+  return res.json();
+}
+
+export async function apiAdminUpdateUserRoles(user: AppUser, targetUserId: string, roles: string[]) {
+  const res = await fetch(`${API_URL}/admin/users/${targetUserId}/roles`, {
+    method: 'POST',
+    headers: authHeaders(user),
+    body: JSON.stringify({ roles }),
+  });
+  if (!res.ok) throw new Error('Erreur lors de la mise à jour des rôles');
+  return res.json();
+}
+
+export async function apiSignIn(email: string): Promise<AppUser> {
+  const res = await fetch(`${API_URL}/auth/signin`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || 'Erreur de connexion');
+  }
+  return res.json();
+}
+
+export async function apiSignUp(payload: AppUser): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_URL}/auth/signup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || 'Erreur d\'inscription');
+  }
+  return res.json();
+}
+

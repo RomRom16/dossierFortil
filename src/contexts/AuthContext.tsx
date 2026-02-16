@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { AppUser } from '../lib/api';
-import { apiGetMe } from '../lib/api';
+import { apiGetMe, apiSignIn, apiSignUp } from '../lib/api';
 
 interface AuthContextType {
   user: AppUser | null;
@@ -28,8 +28,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { roles: loadedRoles } = await apiGetMe(currentUser);
       setRoles(loadedRoles);
     } catch (error) {
-      console.error('Erreur inattendue lors du chargement des rôles utilisateur:', error);
-      setRoles([]);
+      console.error('Session invalide ou expirée:', error);
+      // Si l'API renvoie une erreur (ex: 401), on vide la session locale
+      signOut();
     }
   };
 
@@ -43,60 +44,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const parsed = JSON.parse(stored) as AppUser;
       setUser(parsed);
+      // On vérifie la validité du compte au chargement
       loadUserRoles(parsed).finally(() => setLoading(false));
     } catch (error) {
-      console.error('Erreur lors du chargement de la session depuis le stockage local:', error);
-      setUser(null);
-      setRoles([]);
+      console.error('Erreur stockage local:', error);
+      signOut();
       setLoading(false);
     }
   }, []);
 
   const signInWithMicrosoft = async () => {
-    throw new Error('Connexion Microsoft non configurée avec le backend actuel.');
+    throw new Error('Connexion Microsoft non configurée.');
   };
 
   const signInWithEmail = async (email: string, _password: string) => {
-    if (!email) {
-      throw new Error('Email requis');
-    }
+    if (!email) throw new Error('Email requis');
 
-    // Auth simplifiée : on génère un identifiant local par navigateur
-    const existing = globalThis.localStorage?.getItem(STORAGE_KEY);
-    let newUser: AppUser | null = null;
+    const normalizedEmail = email.trim().toLowerCase();
+    const verifiedUser = await apiSignIn(normalizedEmail);
 
-    if (existing) {
-      try {
-        const parsed = JSON.parse(existing) as AppUser;
-        if (parsed.email === email) {
-          newUser = parsed;
-        }
-      } catch {
-        // ignore parsing error, on régénère
-      }
-    }
-
-    if (!newUser) {
-      const id =
-        typeof crypto !== 'undefined' && 'randomUUID' in crypto
-          ? crypto.randomUUID()
-          : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-
-      newUser = {
-        id,
-        email,
-        full_name: email.split('@')[0] || email,
-      };
-    }
-
-    setUser(newUser);
-    globalThis.localStorage?.setItem(STORAGE_KEY, JSON.stringify(newUser));
-    await loadUserRoles(newUser);
+    setUser(verifiedUser);
+    globalThis.localStorage?.setItem(STORAGE_KEY, JSON.stringify(verifiedUser));
+    await loadUserRoles(verifiedUser);
   };
 
   const signUpWithEmail = async (email: string, _password: string) => {
-    // Pour l'instant, inscription = connexion directe
-    await signInWithEmail(email, _password);
+    if (!email) throw new Error('Email requis');
+
+    const normalizedEmail = email.trim().toLowerCase();
+    // Génération d'un ID stable basé sur l'email
+    const stableId = 'user_' + btoa(normalizedEmail).replace(/[/+=]/g, '').slice(0, 20);
+
+    const newUser: AppUser = {
+      id: stableId,
+      email: normalizedEmail,
+      full_name: normalizedEmail.split('@')[0],
+    };
+
+    // Création sur le backend
+    await apiSignUp(newUser);
+
+    // Connexion immédiate après inscription
+    setUser(newUser);
+    globalThis.localStorage?.setItem(STORAGE_KEY, JSON.stringify(newUser));
+    await loadUserRoles(newUser);
   };
 
   const signOut = async () => {

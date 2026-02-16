@@ -31,7 +31,7 @@ async function initDatabase() {
         await sql`
       CREATE TABLE IF NOT EXISTS user_roles (
         user_id TEXT NOT NULL,
-        role TEXT NOT NULL CHECK (role IN ('business_manager','admin')),
+        role TEXT NOT NULL CHECK (role IN ('business_manager','admin','consultant')),
         PRIMARY KEY (user_id, role),
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
@@ -197,29 +197,36 @@ async function parseCvWithAI(text) {
 }
 
 // --- Authentication Middleware ---
-function authMiddleware(req, res, next) {
+async function authMiddleware(req, res, next) {
     const userId = req.headers['x-user-id'];
-    const userEmail = req.headers['x-user-email'];
-    const userName = req.headers['x-user-name'];
 
-    if (!userId || !userEmail) {
-        return res.status(401).json({ error: 'Non authentifié' });
+    if (!userId) {
+        return res.status(401).json({ error: 'Session expirée ou non authentifiée' });
     }
 
-    req.user = { id: userId, email: userEmail, full_name: userName || '' };
-    next();
-}
+    try {
+        const users = await sql`SELECT * FROM users WHERE id = ${userId}`;
+        if (users.length === 0) {
+            return res.status(401).json({ error: 'Compte introuvable ou supprimé' });
+        }
 
-// --- Ensure User Exists ---
-async function ensureUser(user) {
-    const existing = await sql`SELECT * FROM users WHERE id = ${user.id}`;
-    if (existing.length === 0) {
-        await sql`
-      INSERT INTO users (id, email, full_name)
-      VALUES (${user.id}, ${user.email}, ${user.full_name || ''})
-    `;
+        const user = users[0];
+        req.user = { id: user.id, email: user.email, full_name: user.full_name || '' };
+        next();
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Erreur serveur' });
     }
 }
+
+// Ensure role exists helper
+async function ensureDefaultRole(userId) {
+    const roles = await sql`SELECT count(*) as count FROM user_roles WHERE user_id = ${userId}`;
+    if (parseInt(roles[0].count) === 0) {
+        await sql`INSERT INTO user_roles (user_id, role) VALUES (${userId}, 'consultant')`;
+    }
+}
+
 
 // ======================
 // ROUTES
@@ -230,10 +237,49 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: now() });
 });
 
+// Auth endpoints
+app.post('/api/auth/signup', async (req, res) => {
+    try {
+        const { email, id, full_name } = req.body;
+        const existing = await sql`SELECT id FROM users WHERE email = ${email}`;
+
+        if (existing.length > 0) {
+            return res.status(400).json({ error: 'Ce compte existe déjà' });
+        }
+
+        await sql`INSERT INTO users (id, email, full_name) VALUES (${id}, ${email}, ${full_name})`;
+        await ensureDefaultRole(id);
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+app.post('/api/auth/signin', async (req, res) => {
+    try {
+        const { email } = req.body;
+        const user = await sql`SELECT * FROM users WHERE email = ${email}`;
+
+        if (user.length === 0) {
+            return res.status(401).json({ error: 'Compte introuvable. Veuillez vous inscrire.' });
+        }
+
+        res.json({
+            id: user[0].id,
+            email: user[0].email,
+            full_name: user[0].full_name
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
 // Get user roles
 app.get('/api/user/roles', authMiddleware, async (req, res) => {
     try {
-        await ensureUser(req.user);
         const roles = await sql`
       SELECT role FROM user_roles WHERE user_id = ${req.user.id}
     `;
@@ -247,7 +293,6 @@ app.get('/api/user/roles', authMiddleware, async (req, res) => {
 // Get all candidates
 app.get('/api/candidates', authMiddleware, async (req, res) => {
     try {
-        await ensureUser(req.user);
 
         const roles = await sql`
       SELECT role FROM user_roles WHERE user_id = ${req.user.id}
@@ -277,7 +322,6 @@ app.get('/api/candidates', authMiddleware, async (req, res) => {
 // Create candidate
 app.post('/api/candidates', authMiddleware, async (req, res) => {
     try {
-        await ensureUser(req.user);
 
         const { full_name, email, phone } = req.body;
         if (!full_name) {
@@ -300,10 +344,57 @@ app.post('/api/candidates', authMiddleware, async (req, res) => {
     }
 });
 
+// --- ADMIN: Gestion des utilisateurs ---
+app.get('/api/admin/users', authMiddleware, async (req, res) => {
+    try {
+        const adminRoles = await sql`SELECT role FROM user_roles WHERE user_id = ${req.user.id}`;
+        if (!adminRoles.map(r => r.role).includes('admin')) {
+            return res.status(403).json({ error: 'Accès réservé aux administrateurs' });
+        }
+
+        const users = await sql`SELECT id, email, full_name FROM users`;
+        const usersWithRoles = await Promise.all(users.map(async (u) => {
+            const roles = await sql`SELECT role FROM user_roles WHERE user_id = ${u.id}`;
+            return { ...u, roles: roles.map(r => r.role) };
+        }));
+
+        res.json(usersWithRoles);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+app.post('/api/admin/users/:id/roles', authMiddleware, async (req, res) => {
+    try {
+        const adminRoles = await sql`SELECT role FROM user_roles WHERE user_id = ${req.user.id}`;
+        if (!adminRoles.map(r => r.role).includes('admin')) {
+            return res.status(403).json({ error: 'Accès réservé aux administrateurs' });
+        }
+
+        const targetUserId = req.params.id;
+        const { roles } = req.body;
+
+        if (!Array.isArray(roles)) {
+            return res.status(400).json({ error: 'Le champ roles doit être un tableau' });
+        }
+
+        // Use a simple delete then multiple inserts (Neon doesn't support transactions in the same way as SQLite library, but this is simple enough)
+        await sql`DELETE FROM user_roles WHERE user_id = ${targetUserId}`;
+        for (const role of roles) {
+            await sql`INSERT INTO user_roles (user_id, role) VALUES (${targetUserId}, ${role})`;
+        }
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
 // Get candidate details with profiles
 app.get('/api/candidates/:id', authMiddleware, async (req, res) => {
     try {
-        await ensureUser(req.user);
 
         const candidate = await sql`SELECT * FROM candidates WHERE id = ${req.params.id}`;
         if (candidate.length === 0) {
@@ -411,7 +502,6 @@ app.delete('/api/candidates/:id', authMiddleware, async (req, res) => {
 // Create profile/dossier
 app.post('/api/profiles', authMiddleware, async (req, res) => {
     try {
-        await ensureUser(req.user);
 
         const { candidate_id, full_name, roles, job_title, candidate_description } = req.body;
 
@@ -463,6 +553,47 @@ app.delete('/api/profiles/:id', authMiddleware, async (req, res) => {
 
         await sql`DELETE FROM profiles WHERE id = ${req.params.id}`;
         res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// List profiles/dossiers
+app.get('/api/profiles', authMiddleware, async (req, res) => {
+    try {
+        const roles = await sql`SELECT role FROM user_roles WHERE user_id = ${req.user.id}`;
+        const rolesList = roles.map(r => r.role);
+
+        let profiles;
+        if (rolesList.includes('admin')) {
+            profiles = await sql`SELECT p.*, c.full_name as candidate_name FROM profiles p LEFT JOIN candidates c ON p.candidate_id = c.id ORDER BY p.updated_at DESC`;
+        } else if (rolesList.includes('business_manager')) {
+            profiles = await sql`SELECT p.*, c.full_name as candidate_name FROM profiles p LEFT JOIN candidates c ON p.candidate_id = c.id WHERE p.manager_id = ${req.user.id} ORDER BY p.updated_at DESC`;
+        } else {
+            profiles = await sql`SELECT p.*, c.full_name as candidate_name FROM profiles p LEFT JOIN candidates c ON p.candidate_id = c.id WHERE p.manager_id = ${req.user.id} ORDER BY p.updated_at DESC`;
+        }
+
+        // Fetch details for each profile
+        const enriched = await Promise.all(profiles.map(async (p) => {
+            const [expertises, tools, experiences, educations] = await Promise.all([
+                sql`SELECT * FROM general_expertises WHERE profile_id = ${p.id}`,
+                sql`SELECT * FROM tools WHERE profile_id = ${p.id}`,
+                sql`SELECT * FROM experiences WHERE profile_id = ${p.id} ORDER BY start_date DESC`,
+                sql`SELECT * FROM educations WHERE profile_id = ${p.id} ORDER BY year DESC`
+            ]);
+
+            return {
+                ...p,
+                roles: p.roles ? p.roles.split(',').map(r => r.trim()) : [],
+                general_expertises: expertises,
+                tools,
+                experiences,
+                educations
+            };
+        }));
+
+        res.json(enriched);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Erreur serveur' });

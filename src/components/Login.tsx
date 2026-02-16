@@ -27,10 +27,6 @@ export function Login() {
     try {
       if (isSignUp) {
         await signUpWithEmail(email, password);
-        setError(null);
-        alert('Compte créé! Vous pouvez maintenant vous connecter.');
-        setIsSignUp(false);
-        setPassword('');
       } else {
         await signInWithEmail(email, password);
       }

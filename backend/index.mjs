@@ -10,6 +10,11 @@ const db = new Database('./profiles.db');
 app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
 app.use(express.json());
 
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 // --- INIT DB ---
 db.exec(`
   create table if not exists users (
@@ -20,7 +25,7 @@ db.exec(`
 
   create table if not exists user_roles (
     user_id text not null,
-    role text not null check (role in ('business_manager','admin')),
+    role text not null check (role in ('business_manager','admin','consultant')),
     primary key (user_id, role),
     foreign key (user_id) references users(id) on delete cascade
   );
@@ -209,32 +214,63 @@ async function parseCvWithAI(text) {
   }
 }
 
-// --- AUTH SIMPLIFIÉE VIA HEADERS ---
+// --- AUTH STRICTE ---
 function authMiddleware(req, res, next) {
   const userId = req.header('x-user-id');
-  const email = req.header('x-user-email') || '';
-  const fullName = req.header('x-user-name') || '';
 
   if (!userId) {
-    return res.status(401).json({ error: 'Utilisateur non authentifié (manque x-user-id)' });
+    return res.status(401).json({ error: 'Session expirée ou non authentifiée' });
   }
 
-  // Upsert utilisateur
-  db.prepare(`
-    insert into users (id, email, full_name)
-    values (?, ?, ?)
-    on conflict(id) do update set email=excluded.email, full_name=excluded.full_name
-  `).run(userId, email, fullName);
+  // Vérifier si l'utilisateur existe vraiment en BDD
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
 
-  req.user = { id: userId, email, fullName };
+  if (!user) {
+    return res.status(401).json({ error: 'Compte introuvable ou supprimé' });
+  }
+
+  req.user = { id: user.id, email: user.email, full_name: user.full_name };
   next();
 }
 
+// Routes d'authentification
+app.post('/api/auth/signup', (req, res) => {
+  const { email, id, full_name } = req.body;
+
+  const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
+  if (existing) {
+    return res.status(400).json({ error: 'Ce compte existe déjà' });
+  }
+
+  db.prepare('INSERT INTO users (id, email, full_name) VALUES (?, ?, ?)').run(id, email, full_name);
+  ensureDefaultRole(id);
+
+  res.json({ success: true });
+});
+
+app.post('/api/auth/signin', (req, res) => {
+  const { email } = req.body;
+
+  const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+  if (!user) {
+    return res.status(401).json({ error: 'Compte introuvable. Veuillez vous inscrire.' });
+  }
+
+  res.json({
+    id: user.id,
+    email: user.email,
+    full_name: user.full_name
+  });
+});
+
 // Gestion des rôles :
-// Cette fonction est volontairement vide pour laisser la main
-// à une gestion explicite des rôles (admin, business_manager, etc.)
+// Vérifie si l'utilisateur a au moins un rôle, sinon lui donne 'consultant' par défaut
 function ensureDefaultRole(userId) {
-  // No-op: les rôles sont gérés manuellement dans la table user_roles.
+  const hasRole = db.prepare('select count(*) as count from user_roles where user_id = ?').get(userId).count > 0;
+  if (!hasRole) {
+    db.prepare('insert into user_roles (user_id, role) values (?, ?)').run(userId, 'consultant');
+    console.log(`[AUTH] Rôle par défaut 'consultant' attribué à ${userId}`);
+  }
 }
 
 // --- ENDPOINT: infos utilisateur + rôles ---
@@ -249,9 +285,49 @@ app.get('/api/me', authMiddleware, (req, res) => {
   res.json({
     id: req.user.id,
     email: req.user.email,
-    full_name: req.user.fullName,
+    full_name: req.user.full_name,
     roles,
   });
+});
+
+// --- ADMIN: Gestion des utilisateurs ---
+app.get('/api/admin/users', authMiddleware, (req, res) => {
+  const adminRoles = db.prepare('select role from user_roles where user_id = ?').all(req.user.id).map(r => r.role);
+  if (!adminRoles.includes('admin')) {
+    return res.status(403).json({ error: 'Accès réservé aux administrateurs' });
+  }
+
+  const users = db.prepare('SELECT id, email, full_name FROM users').all();
+  const usersWithRoles = users.map(u => {
+    const roles = db.prepare('SELECT role FROM user_roles WHERE user_id = ?').all(u.id).map(r => r.role);
+    return { ...u, roles };
+  });
+
+  res.json(usersWithRoles);
+});
+
+app.post('/api/admin/users/:id/roles', authMiddleware, (req, res) => {
+  const adminRoles = db.prepare('select role from user_roles where user_id = ?').all(req.user.id).map(r => r.role);
+  if (!adminRoles.includes('admin')) {
+    return res.status(403).json({ error: 'Accès réservé aux administrateurs' });
+  }
+
+  const targetUserId = req.params.id;
+  const { roles } = req.body; // Array of strings e.g. ['admin', 'business_manager']
+
+  if (!Array.isArray(roles)) {
+    return res.status(400).json({ error: 'Le champ roles doit être un tableau' });
+  }
+
+  db.transaction(() => {
+    db.prepare('DELETE FROM user_roles WHERE user_id = ?').run(targetUserId);
+    const stmt = db.prepare('INSERT INTO user_roles (user_id, role) VALUES (?, ?)');
+    roles.forEach(role => {
+      stmt.run(targetUserId, role);
+    });
+  })();
+
+  res.json({ success: true });
 });
 
 // --- API CANDIDATS ---
