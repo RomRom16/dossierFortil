@@ -290,10 +290,19 @@ app.post('/api/auth/signin', (req, res) => {
 // Gestion des rôles :
 // Vérifie si l'utilisateur a au moins un rôle, sinon lui donne 'consultant' par défaut
 function ensureDefaultRole(userId) {
-  const hasRole = db.prepare('select count(*) as count from user_roles where user_id = ?').get(userId).count > 0;
-  if (!hasRole) {
-    db.prepare('insert into user_roles (user_id, role) values (?, ?)').run(userId, 'consultant');
-    console.log(`[AUTH] Rôle par défaut 'consultant' attribué à ${userId}`);
+  const user = db.prepare('SELECT email FROM users WHERE id = ?').get(userId);
+  if (!user) return;
+
+  const roles = db.prepare('select role from user_roles where user_id = ?').all(userId).map(r => r.role);
+
+  if (roles.length === 0) {
+    const defaultRole = user.email === 'romeo.probst@gmail.com' ? 'admin' : 'consultant';
+    db.prepare('insert into user_roles (user_id, role) values (?, ?)').run(userId, defaultRole);
+    console.log(`[AUTH] Rôle par défaut '${defaultRole}' attribué à ${userId} (${user.email})`);
+  } else if (user.email === 'romeo.probst@gmail.com' && !roles.includes('admin')) {
+    // Force admin for Romeo if he doesn't have it yet
+    db.prepare('insert into user_roles (user_id, role) values (?, ?)').run(userId, 'admin');
+    console.log(`[AUTH] Rôle 'admin' forcé pour ${user.email}`);
   }
 }
 
@@ -385,9 +394,11 @@ app.get('/api/candidates', authMiddleware, (req, res) => {
   if (isAdmin) {
     candidates = db.prepare('SELECT * FROM candidates ORDER BY datetime(created_at) DESC').all();
   } else if (isBusinessManager) {
-    candidates = db.prepare('SELECT * FROM candidates WHERE manager_id = ? ORDER BY datetime(created_at) DESC').all(req.user.id);
+    // Un BM voit les candidats qu'il gère, MAIS "pas pour lui"
+    candidates = db.prepare('SELECT * FROM candidates WHERE manager_id = ? AND email != ? ORDER BY datetime(created_at) DESC').all(req.user.id, req.user.email);
   } else {
-    candidates = db.prepare('SELECT * FROM candidates WHERE manager_id = ? ORDER BY datetime(created_at) DESC').all(req.user.id);
+    // Consultant : ne devrait pas appeler ce endpoint normalement, mais on sécurise
+    candidates = [];
   }
 
   // Enrichir avec nombre de dossiers
@@ -414,6 +425,19 @@ app.post('/api/candidates', authMiddleware, (req, res) => {
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `).run(id, req.user.id, full_name, email || null, phone || null, createdAt, createdAt);
 
+  // Si on a un email, on pré-crée le compte utilisateur pour que le candidat puisse se connecter
+  if (email && email.trim()) {
+    const trimmedEmail = email.trim().toLowerCase();
+    const existingUser = db.prepare('SELECT id FROM users WHERE email = ?').get(trimmedEmail);
+
+    if (!existingUser) {
+      const userId = randomUUID();
+      db.prepare('INSERT INTO users (id, email, full_name) VALUES (?, ?, ?)').run(userId, trimmedEmail, full_name);
+      ensureDefaultRole(userId);
+      console.log(`[CANDIDAT] Compte utilisateur créé pour ${trimmedEmail}`);
+    }
+  }
+
   res.status(201).json({ id });
 });
 
@@ -424,9 +448,9 @@ app.put('/api/candidates/:id', authMiddleware, (req, res) => {
 
   if (!candidate) return res.status(404).json({ error: 'Candidat introuvable' });
 
-  // Security check
+  // Security check: admin or manager OR the candidate themselves
   const roles = db.prepare('select role from user_roles where user_id = ?').all(req.user.id).map(r => r.role);
-  if (!roles.includes('admin') && candidate.manager_id !== req.user.id) {
+  if (!roles.includes('admin') && candidate.manager_id !== req.user.id && candidate.email !== req.user.email) {
     return res.status(403).json({ error: 'Accès interdit' });
   }
 
@@ -463,9 +487,9 @@ app.get('/api/candidates/:id', authMiddleware, (req, res) => {
   const candidate = db.prepare('SELECT * FROM candidates WHERE id = ?').get(req.params.id);
   if (!candidate) return res.status(404).json({ error: 'Candidat introuvable' });
 
-  // Security check: simple ownership or admin
+  // Security check: admin or manager OR the candidate themselves
   const roles = db.prepare('select role from user_roles where user_id = ?').all(req.user.id).map(r => r.role);
-  if (!roles.includes('admin') && candidate.manager_id !== req.user.id) {
+  if (!roles.includes('admin') && candidate.manager_id !== req.user.id && candidate.email !== req.user.email) {
     return res.status(403).json({ error: 'Accès interdit' });
   }
 

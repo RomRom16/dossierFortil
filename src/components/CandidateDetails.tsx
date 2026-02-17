@@ -15,7 +15,11 @@ type Props = {
 export function CandidateDetails({ candidateId, onBack, onSelectDossier, onCreateDossier }: Props) {
     const { user, isAdmin, isBusinessManager } = useAuth();
     const [data, setData] = useState<CandidateWithProfiles | null>(null);
-    const canManage = isAdmin || isBusinessManager || (data?.email === user?.email);
+
+    // Un simple consultant peut gérer son profil (isSelf).
+    // Un BM peut gérer les autres, mais "pas pour lui" (sauf s'il est Admin).
+    const isSelf = data?.email === user?.email;
+    const canManage = isAdmin || (isBusinessManager && !isSelf) || (!isBusinessManager && !isAdmin && isSelf);
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState({ full_name: '', email: '', phone: '' });

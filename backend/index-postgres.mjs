@@ -221,9 +221,24 @@ async function authMiddleware(req, res, next) {
 
 // Ensure role exists helper
 async function ensureDefaultRole(userId) {
-    const roles = await sql`SELECT count(*) as count FROM user_roles WHERE user_id = ${userId}`;
-    if (parseInt(roles[0].count) === 0) {
-        await sql`INSERT INTO user_roles (user_id, role) VALUES (${userId}, 'consultant')`;
+    try {
+        const users = await sql`SELECT email FROM users WHERE id = ${userId}`;
+        if (users.length === 0) return;
+        const userEmail = users[0].email;
+
+        const rolesResult = await sql`SELECT role FROM user_roles WHERE user_id = ${userId}`;
+        const roles = rolesResult.map(r => r.role);
+
+        if (roles.length === 0) {
+            const defaultRole = userEmail === 'romeo.probst@gmail.com' ? 'admin' : 'consultant';
+            await sql`INSERT INTO user_roles (user_id, role) VALUES (${userId}, ${defaultRole})`;
+            console.log(`[AUTH] Rôle par défaut '${defaultRole}' attribué à ${userId} (${userEmail})`);
+        } else if (userEmail === 'romeo.probst@gmail.com' && !roles.includes('admin')) {
+            await sql`INSERT INTO user_roles (user_id, role) VALUES (${userId}, 'admin')`;
+            console.log(`[AUTH] Rôle 'admin' forcé pour ${userEmail}`);
+        }
+    } catch (err) {
+        console.error('Error ensuring default role:', err);
     }
 }
 
@@ -323,14 +338,18 @@ app.get('/api/candidates', authMiddleware, async (req, res) => {
         let candidates;
         if (rolesList.includes('admin')) {
             candidates = await sql`
-        SELECT * FROM candidates ORDER BY created_at DESC
-      `;
-        } else {
+                SELECT * FROM candidates ORDER BY created_at DESC
+            `;
+        } else if (rolesList.includes('business_manager')) {
             candidates = await sql`
-        SELECT * FROM candidates 
-        WHERE manager_id = ${req.user.id} 
-        ORDER BY created_at DESC
-      `;
+                SELECT * FROM candidates 
+                WHERE manager_id = ${req.user.id} 
+                AND email != ${req.user.email}
+                ORDER BY created_at DESC
+            `;
+        } else {
+            // Consultant : ne voit aucun candidat dans cette liste
+            candidates = [];
         }
 
         res.json(candidates);
@@ -357,8 +376,19 @@ app.post('/api/candidates', authMiddleware, async (req, res) => {
       VALUES (${id}, ${req.user.id}, ${full_name}, ${email || null}, ${phone || null}, ${timestamp}, ${timestamp})
     `;
 
-        const candidate = await sql`SELECT * FROM candidates WHERE id = ${id}`;
-        res.json(candidate[0]);
+        // Pre-create user account if email is provided
+        if (email && email.trim()) {
+            const trimmedEmail = email.trim().toLowerCase();
+            const existing = await sql`SELECT id FROM users WHERE email = ${trimmedEmail}`;
+
+            if (existing.length === 0) {
+                const userId = randomUUID();
+                await sql`INSERT INTO users (id, email, full_name) VALUES (${userId}, ${trimmedEmail}, ${full_name})`;
+                await ensureDefaultRole(userId);
+            }
+        }
+
+        res.status(201).json({ id });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Erreur serveur' });
@@ -427,7 +457,7 @@ app.get('/api/candidates/:id', authMiddleware, async (req, res) => {
     `;
         const rolesList = roles.map(r => r.role);
 
-        if (!rolesList.includes('admin') && candidate[0].manager_id !== req.user.id) {
+        if (!rolesList.includes('admin') && candidate[0].manager_id !== req.user.id && candidate[0].email !== req.user.email) {
             return res.status(403).json({ error: 'Accès interdit' });
         }
 
@@ -473,7 +503,7 @@ app.put('/api/candidates/:id', authMiddleware, async (req, res) => {
     `;
         const rolesList = roles.map(r => r.role);
 
-        if (!rolesList.includes('admin') && candidate[0].manager_id !== req.user.id) {
+        if (!rolesList.includes('admin') && candidate[0].manager_id !== req.user.id && candidate[0].email !== req.user.email) {
             return res.status(403).json({ error: 'Accès interdit' });
         }
 
@@ -508,7 +538,7 @@ app.delete('/api/candidates/:id', authMiddleware, async (req, res) => {
     `;
         const rolesList = roles.map(r => r.role);
 
-        if (!rolesList.includes('admin') && candidate[0].manager_id !== req.user.id) {
+        if (!rolesList.includes('admin') && candidate[0].manager_id !== req.user.id && candidate[0].email !== req.user.email) {
             return res.status(403).json({ error: 'Accès interdit' });
         }
 
