@@ -1,59 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { UserHeader } from './UserHeader';
 import { CandidatesList } from './CandidatesList';
 import { CandidateDetails } from './CandidateDetails';
-import ProfileForm from './ProfileForm';
-import { AdminPanel } from './AdminPanel';
 import { DossierView } from './DossierView';
-import { useAuth } from '../contexts/AuthContext';
-import { apiGetMyCandidate } from '../lib/api';
+import ProfileForm from './ProfileForm';
 
 type ViewState =
   | { type: 'LIST' }
   | { type: 'DETAILS'; candidateId: string }
   | { type: 'CREATE_DOSSIER'; candidateId: string; candidateName: string }
-  | { type: 'ADMIN' }
-  | { type: 'MY_PROFILE'; selfCandidateId: string }
-  | { type: 'DOSSIER_VIEW'; profileId: string; candidateId: string };
+  | { type: 'DOSSIER'; profileId: string; candidateId: string };
 
 export function Dashboard() {
-  const { user, isAdmin, isBusinessManager } = useAuth();
-  const isConsultantOnly = !isAdmin && !isBusinessManager;
-
-  const [view, setView] = useState<ViewState>({ type: isConsultantOnly ? 'MY_PROFILE' : 'LIST' } as ViewState);
-
-  // Pour les consultants, on récupère leur propre profil candidat au chargement
-  useEffect(() => {
-    if (isConsultantOnly && view.type === 'LIST') {
-      // Si par erreur on est en LIST, on repousse vers MY_PROFILE
-      (async () => {
-        try {
-          const self = await apiGetMyCandidate(user!);
-          setView({ type: 'MY_PROFILE', selfCandidateId: self.id });
-        } catch (e) {
-          console.error("Erreur lors de la récupération du profil personnel", e);
-        }
-      })();
-    }
-
-    if (isConsultantOnly && view.type === 'MY_PROFILE' && !('selfCandidateId' in view)) {
-      (async () => {
-        try {
-          const self = await apiGetMyCandidate(user!);
-          setView({ type: 'MY_PROFILE', selfCandidateId: self.id });
-        } catch (e) {
-          console.error("Erreur lors de la récupération du profil personnel", e);
-        }
-      })();
-    }
-  }, [isConsultantOnly, view.type, user]);
+  const [view, setView] = useState<ViewState>({ type: 'LIST' });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 pb-20">
-      <UserHeader
-        onNavigateDashboard={() => setView({ type: isConsultantOnly ? 'MY_PROFILE' : 'LIST' } as ViewState)}
-        onNavigateAdmin={isAdmin ? () => setView({ type: 'ADMIN' }) : undefined}
-      />
+      <UserHeader />
 
       {/* Dynamic Content */}
       <div className="pt-6">
@@ -63,31 +26,19 @@ export function Dashboard() {
           />
         )}
 
-        {(view.type === 'DETAILS' || view.type === 'MY_PROFILE') && (
+        {view.type === 'DETAILS' && (
           <CandidateDetails
-            candidateId={view.type === 'DETAILS' ? view.candidateId : (view as any).selfCandidateId}
-            onBack={isConsultantOnly ? undefined : () => setView({ type: 'LIST' })}
-            onSelectDossier={(profileId) => setView({
-              type: 'DOSSIER_VIEW',
-              profileId,
-              candidateId: view.type === 'DETAILS' ? view.candidateId : (view as any).selfCandidateId
-            })}
-            onCreateDossier={(name) => setView({
-              type: 'CREATE_DOSSIER',
-              candidateId: view.type === 'DETAILS' ? view.candidateId : (view as any).selfCandidateId,
-              candidateName: name
-            })}
+            candidateId={view.candidateId}
+            onBack={() => setView({ type: 'LIST' })}
+            onSelectDossier={(profileId) => setView({ type: 'DOSSIER', profileId, candidateId: view.candidateId })}
+            onCreateDossier={(name) => setView({ type: 'CREATE_DOSSIER', candidateId: view.candidateId, candidateName: name })}
           />
         )}
 
-        {view.type === 'DOSSIER_VIEW' && (
+        {view.type === 'DOSSIER' && (
           <DossierView
             profileId={view.profileId}
-            onBack={() => setView({
-              type: isConsultantOnly ? 'MY_PROFILE' : 'DETAILS',
-              candidateId: view.candidateId,
-              selfCandidateId: view.candidateId
-            } as any)}
+            onBack={() => setView({ type: 'DETAILS', candidateId: view.candidateId })}
           />
         )}
 
@@ -95,21 +46,9 @@ export function Dashboard() {
           <ProfileForm
             candidateId={view.candidateId}
             candidateName={view.candidateName}
-            onCancel={() => setView({
-              type: isConsultantOnly ? 'MY_PROFILE' : 'DETAILS',
-              candidateId: view.candidateId,
-              selfCandidateId: view.candidateId
-            } as any)}
-            onSuccess={() => setView({
-              type: isConsultantOnly ? 'MY_PROFILE' : 'DETAILS',
-              candidateId: view.candidateId,
-              selfCandidateId: view.candidateId
-            } as any)}
+            onCancel={() => setView({ type: 'DETAILS', candidateId: view.candidateId })}
+            onSuccess={() => setView({ type: 'DETAILS', candidateId: view.candidateId })}
           />
-        )}
-
-        {view.type === 'ADMIN' && (
-          <AdminPanel onBack={() => setView({ type: isConsultantOnly ? 'MY_PROFILE' : 'LIST' } as any)} />
         )}
       </div>
     </div>

@@ -679,8 +679,36 @@ app.post('/api/parse-cv', async (req, res) => {
   }
 });
 
+// --- Helper: message d'erreur lisible depuis une erreur axios / FastAPI ---
+function formatFastApiError(err) {
+  if (!err) return 'Erreur inconnue';
+  if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
+    return 'Le service de génération de dossiers (CV2DOC/FastAPI) est indisponible. Vérifiez qu’il est démarré (port 8000 ou conteneur fortil-fastapi).';
+  }
+  if (err.code === 'ETIMEDOUT') {
+    return 'Le service CV2DOC a mis trop de temps à répondre. Réessayez avec un CV plus court.';
+  }
+  const data = err.response?.data;
+  if (data != null) {
+    if (typeof data === 'string') return data.substring(0, 300);
+    if (Buffer.isBuffer(data) || data instanceof ArrayBuffer) {
+      try {
+        return Buffer.from(data).toString('utf8').substring(0, 300) || `Erreur HTTP ${err.response?.status || 500}`;
+      } catch (_) {
+        return `Erreur HTTP ${err.response?.status || 500}`;
+      }
+    }
+    if (typeof data === 'object' && data.detail) {
+      return typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail).substring(0, 300);
+    }
+    if (typeof data === 'object' && data.message) return data.message;
+  }
+  return err.message || 'Erreur interne serveur';
+}
+
 // --- ENDPOINT: Génération DOCX via service externe (FastAPI) ---
 app.post('/api/process-cv-docx', authMiddleware, upload.single('cv'), async (req, res) => {
+  const fs = await import('fs');
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'Fichier CV manquant' });
@@ -689,7 +717,6 @@ app.post('/api/process-cv-docx', authMiddleware, upload.single('cv'), async (req
     const fastapiUrl = process.env.FASTAPI_URL || 'http://localhost:8000';
     const axios = (await import('axios')).default;
     const FormData = (await import('form-data')).default;
-    const fs = await import('fs');
 
     const form = new FormData();
     form.append('cv', fs.createReadStream(req.file.path), {
@@ -704,22 +731,23 @@ app.post('/api/process-cv-docx', authMiddleware, upload.single('cv'), async (req
       responseType: 'arraybuffer',
     });
 
-    // Nettoyage du fichier temporaire
-    fs.unlinkSync(req.file.path);
-
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     res.setHeader('Content-Disposition', `attachment; filename="Dossier_de_Competences_${req.file.originalname.replace('.pdf', '')}.docx"`);
     res.send(Buffer.from(response.data));
-
   } catch (error) {
-    console.error('Erreur dans /api/process-cv-docx:', error.response?.data?.toString() || error.message);
-    const errorMessage = error.response?.data?.toString() || error.message;
+    console.error('[CV2DOC] process-cv-docx:', error.response?.status, error.response?.data?.toString?.()?.slice(0, 200) || error.message);
+    const errorMessage = formatFastApiError(error);
     res.status(500).json({ error: errorMessage });
+  } finally {
+    if (req.file?.path && fs.existsSync(req.file.path)) {
+      try { fs.unlinkSync(req.file.path); } catch (_) {}
+    }
   }
 });
 
 // --- ENDPOINT: Parsing CV via Gemini (FastAPI) ---
 app.post('/api/parse-cv-gemini', authMiddleware, upload.single('cv'), async (req, res) => {
+  const fs = await import('fs');
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'Fichier CV manquant' });
@@ -728,7 +756,6 @@ app.post('/api/parse-cv-gemini', authMiddleware, upload.single('cv'), async (req
     const fastapiUrl = process.env.FASTAPI_URL || 'http://localhost:8000';
     const axios = (await import('axios')).default;
     const FormData = (await import('form-data')).default;
-    const fs = await import('fs');
 
     const form = new FormData();
     form.append('cv', fs.createReadStream(req.file.path), {
@@ -740,17 +767,27 @@ app.post('/api/parse-cv-gemini', authMiddleware, upload.single('cv'), async (req
 
     const response = await axios.post(`${fastapiUrl}/extract_json/`, form, {
       headers: form.getHeaders(),
+      validateStatus: () => true,
     });
 
-    // Nettoyage du fichier temporaire
-    fs.unlinkSync(req.file.path);
+    const contentType = response.headers?.['content-type'] || '';
+    const data = response.data;
+    const isHtml = typeof data === 'string' && data.trimStart().startsWith('<');
+    if (response.status !== 200 || isHtml || (contentType && contentType.includes('text/html'))) {
+      console.error('[CV2DOC] Réponse invalide du service FastAPI:', response.status, contentType?.substring(0, 50));
+      return res.status(502).json({
+        error: 'Le service d\'analyse de CV (CV2DOC/FastAPI) est indisponible ou a renvoyé une erreur. Vérifiez qu’il est démarré (port 8000 ou conteneur fortil-fastapi).',
+      });
+    }
 
-    res.json(response.data);
-
+    res.json(data);
   } catch (error) {
-    console.error('Erreur dans /api/parse-cv-gemini:', error.response?.data?.toString() || error.message);
-    const errorMessage = error.response?.data?.toString() || error.message;
-    res.status(500).json({ error: errorMessage });
+    console.error('[CV2DOC] parse-cv-gemini:', error.response?.status, error.response?.data?.toString?.()?.slice?.(0, 200) || error.message);
+    res.status(500).json({ error: formatFastApiError(error) });
+  } finally {
+    if (req.file?.path && fs.existsSync(req.file.path)) {
+      try { fs.unlinkSync(req.file.path); } catch (_) {}
+    }
   }
 });
 

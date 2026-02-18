@@ -222,6 +222,13 @@ export async function apiGenerateDocx(user: AppUser, file: File): Promise<Blob> 
     }
   }
 
+  const contentType = res?.headers?.get?.('content-type');
+  if (contentType?.includes('text/html')) {
+    await res.text();
+    throw new Error(
+      'Le serveur a renvoyé du HTML au lieu d’un document. Vérifiez que le backend (port 4000) et le service CV2DOC/FastAPI (port 8000) sont démarrés.'
+    );
+  }
   return res.blob();
 }
 
@@ -250,6 +257,13 @@ export async function apiParseCvGemini(user: AppUser, file: File) {
     }
   }
 
+  const contentType = res?.headers?.get?.('content-type');
+  if (!contentType?.includes('application/json')) {
+    await res.text();
+    throw new Error(
+      'Le serveur a renvoyé du HTML au lieu de JSON. Vérifiez que le backend (port 4000) et le service CV2DOC/FastAPI (port 8000) sont démarrés, et que l’URL de l’API est correcte (VITE_API_URL).'
+    );
+  }
   return res.json();
 }
 
