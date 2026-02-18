@@ -679,14 +679,20 @@ app.post('/api/parse-cv', async (req, res) => {
   }
 });
 
-// --- Helper: message d'erreur lisible depuis une erreur axios / FastAPI ---
-function formatFastApiError(err) {
+// --- Helper: message d'erreur lisible depuis une erreur axios (FastAPI ou n8n) ---
+// targetUrl = URL appelée (pour adapter le message : n8n vs FastAPI)
+function formatFastApiError(err, targetUrl) {
   if (!err) return 'Erreur inconnue';
+  const isN8n = targetUrl && (targetUrl.includes('5678') || targetUrl.includes('n8n'));
+  const serviceName = isN8n ? 'n8n' : 'CV2DOC/FastAPI';
+  const hint = isN8n
+    ? 'Vérifiez que n8n est démarré (port 5678 ou conteneur fortil-n8n) et que le workflow est actif.'
+    : 'Vérifiez qu’il est démarré (port 8000 ou conteneur fortil-fastapi).';
   if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
-    return 'Le service de génération de dossiers (CV2DOC/FastAPI) est indisponible. Vérifiez qu’il est démarré (port 8000 ou conteneur fortil-fastapi).';
+    return `Le service de génération (${serviceName}) est indisponible. ${hint}`;
   }
   if (err.code === 'ETIMEDOUT') {
-    return 'Le service CV2DOC a mis trop de temps à répondre. Réessayez avec un CV plus court.';
+    return `Le service ${serviceName} a mis trop de temps à répondre. Réessayez avec un CV plus court.`;
   }
   const data = err.response?.data;
   if (data != null) {
@@ -744,7 +750,7 @@ app.post('/api/process-cv-docx', authMiddleware, upload.single('cv'), async (req
     res.send(Buffer.from(response.data));
   } catch (error) {
     console.error('[CV2DOC] process-cv-docx:', error.response?.status, error.response?.data?.toString?.()?.slice(0, 200) || error.message);
-    const errorMessage = formatFastApiError(error);
+    const errorMessage = formatFastApiError(error, targetUrl);
     res.status(500).json({ error: errorMessage });
   } finally {
     if (req.file?.path && fs.existsSync(req.file.path)) {

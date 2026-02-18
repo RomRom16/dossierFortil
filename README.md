@@ -45,6 +45,9 @@ Le moyen le plus simple de lancer l'application complète est d'utiliser Docker 
 ```bash
 docker compose up --build -d
 ```
+
+Lance **tous** les services (frontend, backend, n8n, FastAPI). La génération « Générer depuis CV » a besoin de **n8n** et de **FastAPI** (fortil-fastapi) ; si l’un des deux est arrêté, vous obtiendrez une erreur du type « service indisponible ».
+
 - **Frontend** : `http://localhost:8080` (Interface utilisateur principale)
 - **Backend API** : `http://localhost:4000`
 - **n8n** : `http://localhost:5678` (Workflow automation)
