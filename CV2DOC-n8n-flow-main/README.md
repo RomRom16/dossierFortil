@@ -62,6 +62,22 @@ If you see **"Method not allowed - please check you are using the right HTTP met
 3. **Reverse proxy**  
    If n8n is behind Nginx or another proxy, ensure the form path allows **GET** and **POST**. Some proxies block GET on webhook paths and cause 405.
 
+## Troubleshooting: requête vers FastAPI sans le bon chemin
+
+Si la requête part vers **`http://fastapi-app:8000`** sans le chemin **`/process_cv/`** (visible dans les logs ou l’exécution n8n), FastAPI reçoit un POST sur `/` qui n’existe qu’en GET → erreur 405 Method Not Allowed.
+
+**À faire :**
+
+1. Ouvrir le workflow dans n8n.
+2. Cliquer sur le nœud **HTTP Request**.
+3. Vérifier que l’URL est **exactement** :  
+   **`http://fastapi-app:8000/process_cv/`**  
+   (avec le chemin `/process_cv/` à la fin).
+4. Si l’URL affichée est seulement `http://fastapi-app:8000`, ajouter **`/process_cv/`** à la fin.
+5. Sauvegarder et réactiver le workflow.
+
+En cas de doute, ré-importer le workflow depuis le fichier [n8n_workflows/CV.pdf → Dossier_de_compétences.docx (fastAPI flow).json](./n8n_workflows/) (l’URL complète y est définie).
+
 ---
 
 ## Direct Package Usage
