@@ -53,7 +53,13 @@ export default function ProfileForm({ candidateId, candidateName, onSuccess, onC
           parsed = await apiParseCvGemini(user, file);
         } catch (geminiErr) {
           console.warn("Échec du parsing Gemini, passage au parsing texte classique", geminiErr);
-          setFallbackNotice("Extraction par IA (Gemini) indisponible ; le formulaire a été pré-rempli à partir du texte du PDF.");
+          const msg = geminiErr instanceof Error ? geminiErr.message : "";
+          const isQuota = msg.includes("Quota") || msg.includes("quota") || msg.includes("épuisé");
+          setFallbackNotice(
+            isQuota
+              ? "Quota API Gemini épuisé. Le formulaire a été pré-rempli à partir du texte du PDF."
+              : "Extraction par IA (Gemini) indisponible ; le formulaire a été pré-rempli à partir du texte du PDF."
+          );
         }
       }
 

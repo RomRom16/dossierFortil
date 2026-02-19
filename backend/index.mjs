@@ -800,10 +800,9 @@ app.post('/api/parse-cv-gemini', authMiddleware, upload.single('cv'), async (req
     const data = response.data;
     const isHtml = typeof data === 'string' && data.trimStart().startsWith('<');
     if (response.status !== 200 || isHtml || (contentType && contentType.includes('text/html'))) {
-      console.error('[CV2DOC] Réponse invalide du service FastAPI:', response.status, contentType?.substring(0, 50));
-      return res.status(502).json({
-        error: 'Le service d\'analyse de CV (CV2DOC/FastAPI) est indisponible ou a renvoyé une erreur. Vérifiez qu’il est démarré (port 8000 ou conteneur fortil-fastapi).',
-      });
+      const errBody = (data && typeof data === 'object' && data.error) ? data : null;
+      const msg = errBody?.message || errBody?.error || 'Le service d\'analyse de CV (CV2DOC/FastAPI) est indisponible ou a renvoyé une erreur.';
+      return res.status(response.status === 503 ? 503 : 502).json({ error: msg, code: errBody?.code || null });
     }
 
     res.json(data);
