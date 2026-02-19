@@ -6,6 +6,7 @@
   "scripts": {
     "postinstall": "node -e \"const fs=require('fs'),path=require('path');const cwd=process.cwd();const s=path.join(cwd,'node_modules/pdfjs-dist/build/pdf.worker.min.mjs');const d=path.join(cwd,'public/pdf.worker.min.mjs');try{fs.mkdirSync(path.dirname(d),{recursive:true});if(fs.existsSync(s))fs.copyFileSync(s,d);}catch(e){}\"",
     "dev": "vite",
+    "dev:backend": "cd backend && node --env-file=../.env index.mjs",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",

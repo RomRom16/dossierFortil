@@ -39,6 +39,38 @@ Le projet est divisé en trois composants principaux :
    VITE_SUPABASE_ANON_KEY=votre_cle_anonyme
    ```
 
+### Lancement en local (sans Docker)
+
+Pour tout faire tourner en local (frontend, backend, FastAPI pour l’IA) :
+
+1. **Fichier `.env`** à la racine (voir Configuration ci‑dessus). En local, **ne pas** définir `N8N_WEBHOOK_URL_DOCX` (ou le laisser vide) pour que le backend appelle FastAPI directement.
+
+2. **Terminal 1 – Backend**  
+   Depuis la racine (charge le `.env` à la racine, Node 20+) :
+   ```bash
+   cd backend && npm install && cd ..
+   npm run dev:backend
+   ```
+   → API sur **http://localhost:4000**
+
+3. **Terminal 2 – FastAPI (CV2DOC / Gemini)**  
+   Depuis le dossier du projet :
+   ```bash
+   cd CV2DOC-n8n-flow-main/endpoint && uv run fastapi run main.py --port 8000 --host 0.0.0.0
+   ```
+   (Prérequis : [uv](https://docs.astral.sh/uv/). Si besoin : `curl -LsSf https://astral.sh/uv/install.sh | sh`.)  
+   → Service sur **http://localhost:8000** (extraction JSON + génération DOCX).
+
+4. **Terminal 3 – Frontend**
+   ```bash
+   npm install && npm run dev
+   ```
+   → App sur **http://localhost:5173** (le proxy envoie `/api` vers le backend).
+
+Ouvrir **http://localhost:5173** dans le navigateur. L’extraction par Gemini et la génération DOCX depuis un CV fonctionnent si le backend et FastAPI tournent.
+
+---
+
 ### Lancement avec Docker
 Le moyen le plus simple de lancer l'application complète est d'utiliser Docker Compose. Cela démarrera le frontend, le backend, le service d'analyse de CV (FastAPI) et n8n.
 

@@ -9,7 +9,7 @@ from langchain_core.messages import SystemMessage, HumanMessage
 def analyze_img(image_data, settings):
 
     llm = ChatGoogleGenerativeAI(
-        model="gemini-1.5-flash", 
+        model="gemini-2.0-flash", 
         temperature=0,
         api_key=settings.ai_api_key.get_secret_value()
     )
