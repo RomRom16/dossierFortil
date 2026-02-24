@@ -21,3 +21,6 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# Backend uploads (CV, generated DOCX)
+backend/uploads

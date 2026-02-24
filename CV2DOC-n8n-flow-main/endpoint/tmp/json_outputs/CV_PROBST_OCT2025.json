@@ -1,0 +1,92 @@
+{
+  "nom": "Roméo PROBST",
+  "téléphone": "+3395069224",
+  "secteur_d_activité": "INFO NON DISPONIBLE",
+  "expertises": [
+    {
+      "titre_expertise": "Développement Web",
+      "expertises": "Php (Natif, Laravel)\nJS (ReactJs, React native, NodeJs)\nHTML/CSS (Tailwind, Bootstrap)\nC# / .NET\nDB (PostgreSQL, MySQL, Oracle, MongoDB)\nReact Native, Android Java, Flutter, PWA",
+      "niveau_expertise": "Autonome"
+    },
+    {
+      "titre_expertise": "DevOps",
+      "expertises": "Docker\nKubernetes",
+      "niveau_expertise": "Autonome"
+    },
+    {
+      "titre_expertise": "Gestion de projet",
+      "expertises": "Kanban / Grant\nAgile / Scrum\nChiffrage / Planification\nGestion d'équipe / Suivi d'un planning\nGestion des budgets / charges",
+      "niveau_expertise": "Autonome"
+    }
+  ],
+  "savoir_etre": [
+    {
+      "compétence": "Travail d'équipe / Sociable"
+    },
+    {
+      "compétence": "Curieux"
+    },
+    {
+      "compétence": "Anglais"
+    },
+    {
+      "compétence": "Permis B"
+    }
+  ],
+  "langues": [
+    {
+      "langue": "Anglais",
+      "niveau": "Intermédiaire"
+    }
+  ],
+  "expériences": [
+    {
+      "début": "septembre 2023",
+      "fin": "novembre 2025",
+      "société": "Eurométropole de Strasbourg",
+      "secteur_activité": "INFO NON DISPONIBLE",
+      "programme": "Alternance développeur Web et chef de projet",
+      "poste": "Alternance développeur Web et chef de projet",
+      "objectif": "Alternance dans la cellule de développement de la DNSI de l'Eurométropole de Strasbourg : Chef de projet et développeur d'une application de saisie d'indicateurs pour les espaces verts, chef de projet dans l'étude des développements en mobilité au sein de la DNSI avec étude des besoins et réalisation de POC concernant les développements PWA.",
+      "activités": "INFO NON DÉTAILLÉE",
+      "environnement_technique": "INFO NON DÉTAILLÉE",
+      "expertise_mobilisées": "INFO NON DÉTAILLÉE"
+    },
+    {
+      "début": "septembre 2022",
+      "fin": "août 2023",
+      "société": "Eurométropole de Strasbourg",
+      "secteur_activité": "INFO NON DISPONIBLE",
+      "programme": "Alternance développeur Web",
+      "poste": "Alternance développeur Web",
+      "objectif": "Alternance dans la cellule de développement de la DNSI de l'Eurométropole de Strasbourg : ajout de fonctionnalités dans une application de gestion d'alerte, maintenance d'applications métiers, création d'une application mobile pour l'organigramme de l'Eurométropole de Strasbourg.",
+      "activités": "INFO NON DÉTAILLÉE",
+      "environnement_technique": "INFO NON DÉTAILLÉE",
+      "expertise_mobilisées": "INFO NON DÉTAILLÉE"
+    },
+    {
+      "début": "avril 2022",
+      "fin": "juillet 2022",
+      "société": "Eurométropole de Strasbourg",
+      "secteur_activité": "INFO NON DISPONIBLE",
+      "programme": "Stage FullStack",
+      "poste": "Stage FullStack",
+      "objectif": "Stage de 10 semaines à l'Eurométropole de Strasbourg : Création d'un formulaire pour la récolte d'indicateurs sur les chantiers de l'Eurométropole (PHP, PostgreSQL/MCD, JS, CSS).",
+      "activités": "INFO NON DÉTAILLÉE",
+      "environnement_technique": "INFO NON DÉTAILLÉE",
+      "expertise_mobilisées": "INFO NON DÉTAILLÉE"
+    },
+    {
+      "début": "2016",
+      "fin": "2018",
+      "société": "Marché paysan",
+      "secteur_activité": "INFO NON DISPONIBLE",
+      "programme": "Ingénieur son",
+      "poste": "Ingénieur son",
+      "objectif": "Ingénieur son pour l'association \"Marché paysan\" de Dambach-la-ville",
+      "activités": "INFO NON DÉTAILLÉE",
+      "environnement_technique": "INFO NON DÉTAILLÉE",
+      "expertise_mobilisées": "INFO NON DÉTAILLÉE"
+    }
+  ]
+}

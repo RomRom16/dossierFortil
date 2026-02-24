@@ -3,9 +3,11 @@ import cors from 'cors';
 import Database from 'better-sqlite3';
 import { randomUUID } from 'crypto';
 import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 
 const upload = multer({ dest: 'uploads/' });
-import fs from 'fs';
+if (!fs.existsSync('uploads')) fs.mkdirSync('uploads');
 if (!fs.existsSync('uploads')) fs.mkdirSync('uploads');
 
 const app = express();
@@ -107,6 +109,15 @@ db.exec(`
     created_at text not null,
     foreign key (profile_id) references profiles(id) on delete cascade
   );
+
+  create table if not exists candidate_documents (
+    id text primary key,
+    candidate_id text not null,
+    filename text not null,
+    file_path text not null,
+    created_at text not null,
+    foreign key (candidate_id) references candidates(id) on delete cascade
+  );
 `);
 
 // --- MIGRATION SCHEMA UPDATES ---
@@ -144,6 +155,26 @@ try {
   }
 } catch (e) {
   console.error('Schema migration error:', e);
+}
+
+// Ensure candidate_documents table exists (for DBs created before this table was added)
+try {
+  const exists = db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='candidate_documents'").get();
+  if (!exists) {
+    console.log('Creating candidate_documents table...');
+    db.prepare(`
+      CREATE TABLE candidate_documents (
+        id TEXT PRIMARY KEY,
+        candidate_id TEXT NOT NULL,
+        filename TEXT NOT NULL,
+        file_path TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (candidate_id) REFERENCES candidates(id) ON DELETE CASCADE
+      )
+    `).run();
+  }
+} catch (e) {
+  console.error('candidate_documents migration error:', e);
 }
 
 const now = () => new Date().toISOString();
@@ -722,6 +753,20 @@ function formatFastApiError(err, targetUrl) {
 // --- ENDPOINT: Génération DOCX via n8n (si N8N_WEBHOOK_URL_DOCX) ou FastAPI ---
 app.post('/api/process-cv-docx', authMiddleware, upload.single('cv'), async (req, res) => {
   const fs = await import('fs');
+  const candidateId = req.query.candidate_id || req.body?.candidate_id;
+  if (!candidateId) {
+    return res.status(400).json({ error: 'candidate_id manquant (query ou body)' });
+  }
+
+  const candidate = db.prepare('SELECT * FROM candidates WHERE id = ?').get(candidateId);
+  if (!candidate) {
+    return res.status(404).json({ error: 'Candidat introuvable' });
+  }
+  const roles = db.prepare('select role from user_roles where user_id = ?').all(req.user.id).map(r => r.role);
+  if (!roles.includes('admin') && candidate.manager_id !== req.user.id) {
+    return res.status(403).json({ error: 'Accès interdit à ce candidat' });
+  }
+
   const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL_DOCX;
   const targetUrl = n8nWebhookUrl || `${process.env.FASTAPI_URL || 'http://localhost:8000'}/process_cv/`;
   try {
@@ -751,9 +796,24 @@ app.post('/api/process-cv-docx', authMiddleware, upload.single('cv'), async (req
       validateStatus: (status) => status === 200,
     });
 
+    const buffer = Buffer.from(response.data);
+    const filename = `Dossier_de_Competences_${req.file.originalname.replace(/\.pdf$/i, '')}.docx`;
+
+    // Sauvegarder en BDD et sur disque
+    const docId = randomUUID();
+    const docDir = path.join('uploads', 'documents', candidateId);
+    if (!fs.existsSync(docDir)) {
+      fs.mkdirSync(docDir, { recursive: true });
+    }
+    const filePath = path.join(docDir, `${docId}.docx`);
+    fs.writeFileSync(filePath, buffer);
+    db.prepare(
+      'INSERT INTO candidate_documents (id, candidate_id, filename, file_path, created_at) VALUES (?, ?, ?, ?, ?)'
+    ).run(docId, candidateId, filename, filePath, now());
+
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-    res.setHeader('Content-Disposition', `attachment; filename="Dossier_de_Competences_${req.file.originalname.replace('.pdf', '')}.docx"`);
-    res.send(Buffer.from(response.data));
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(buffer);
   } catch (error) {
     console.error('[CV2DOC] process-cv-docx:', error?.response?.status, error?.response?.data?.toString?.()?.slice(0, 200) || error?.message);
     if (!res.headersSent) {
@@ -814,6 +874,36 @@ app.post('/api/parse-cv-gemini', authMiddleware, upload.single('cv'), async (req
       try { fs.unlinkSync(req.file.path); } catch (_) {}
     }
   }
+});
+
+// GET documents list for a candidate
+app.get('/api/candidates/:id/documents', authMiddleware, (req, res) => {
+  const candidate = db.prepare('SELECT * FROM candidates WHERE id = ?').get(req.params.id);
+  if (!candidate) return res.status(404).json({ error: 'Candidat introuvable' });
+  const roles = db.prepare('select role from user_roles where user_id = ?').all(req.user.id).map(r => r.role);
+  if (!roles.includes('admin') && candidate.manager_id !== req.user.id) {
+    return res.status(403).json({ error: 'Accès interdit' });
+  }
+  const docs = db.prepare('SELECT id, candidate_id, filename, created_at FROM candidate_documents WHERE candidate_id = ? ORDER BY created_at DESC').all(req.params.id);
+  res.json(docs);
+});
+
+// GET download a document by id
+app.get('/api/documents/:id', authMiddleware, (req, res) => {
+  const doc = db.prepare('SELECT * FROM candidate_documents WHERE id = ?').get(req.params.id);
+  if (!doc) return res.status(404).json({ error: 'Document introuvable' });
+  const candidate = db.prepare('SELECT * FROM candidates WHERE id = ?').get(doc.candidate_id);
+  if (!candidate) return res.status(404).json({ error: 'Candidat introuvable' });
+  const roles = db.prepare('select role from user_roles where user_id = ?').all(req.user.id).map(r => r.role);
+  if (!roles.includes('admin') && candidate.manager_id !== req.user.id) {
+    return res.status(403).json({ error: 'Accès interdit' });
+  }
+  if (!fs.existsSync(doc.file_path)) {
+    return res.status(404).json({ error: 'Fichier introuvable sur le serveur' });
+  }
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+  res.setHeader('Content-Disposition', `attachment; filename="${doc.filename}"`);
+  res.sendFile(path.resolve(doc.file_path));
 });
 
 // GET profile details

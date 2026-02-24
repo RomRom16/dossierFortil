@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Plus, FileText, Calendar, Mail, Phone, Briefcase, Trash2, Edit2, Check, X as XIcon, Upload, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plus, FileText, Calendar, Mail, Phone, Briefcase, Trash2, Edit2, Check, X as XIcon, Upload, Loader2, Download } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { apiGetCandidateDetails, apiDeleteCandidate, apiUpdateCandidate, apiDeleteProfile, apiGenerateDocx, type CandidateWithProfiles, type ProfileWithDetails } from '../lib/api';
+import { apiGetCandidateDetails, apiDeleteCandidate, apiUpdateCandidate, apiDeleteProfile, apiGenerateDocx, apiListCandidateDocuments, apiDownloadDocument, type CandidateWithProfiles, type ProfileWithDetails, type CandidateDocument } from '../lib/api';
 import { DossierCard } from './DossierCard';
 import { ConfirmDialog } from './ConfirmDialog';
 
@@ -22,6 +22,7 @@ export function CandidateDetails({ candidateId, onBack, onSelectDossier, onCreat
     const canManage = isAdmin || (isBusinessManager && !isSelf) || (!isBusinessManager && !isAdmin && isSelf);
     const [loading, setLoading] = useState(true);
     const [generating, setGenerating] = useState(false);
+    const [documents, setDocuments] = useState<CandidateDocument[]>([]);
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState({ full_name: '', email: '', phone: '' });
 
@@ -35,7 +36,7 @@ export function CandidateDetails({ candidateId, onBack, onSelectDossier, onCreat
 
         try {
             setGenerating(true);
-            const blob = await apiGenerateDocx(user, file);
+            const blob = await apiGenerateDocx(user, file, candidateId);
 
             // Download the blob
             const url = window.URL.createObjectURL(blob);
@@ -47,6 +48,10 @@ export function CandidateDetails({ candidateId, onBack, onSelectDossier, onCreat
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
 
+            // Refresh documents list (saved in BDD)
+            const docs = await apiListCandidateDocuments(user, candidateId);
+            setDocuments(docs);
+
             // Reset input
             if (fileInputRef.current) fileInputRef.current.value = '';
         } catch (err) {
@@ -54,6 +59,24 @@ export function CandidateDetails({ candidateId, onBack, onSelectDossier, onCreat
             alert('Erreur lors de la génération du dossier : ' + (err as Error).message);
         } finally {
             setGenerating(false);
+        }
+    };
+
+    const handleDownloadDocument = async (doc: CandidateDocument) => {
+        if (!user) return;
+        try {
+            const blob = await apiDownloadDocument(user, doc.id);
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = doc.filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (err) {
+            console.error(err);
+            alert('Erreur lors du téléchargement');
         }
     };
 
@@ -79,6 +102,8 @@ export function CandidateDetails({ candidateId, onBack, onSelectDossier, onCreat
                 email: res.email || '',
                 phone: res.phone || ''
             });
+            const docs = await apiListCandidateDocuments(user!, candidateId);
+            setDocuments(docs);
         } catch (err) {
             console.error(err);
         } finally {
@@ -319,6 +344,34 @@ export function CandidateDetails({ candidateId, onBack, onSelectDossier, onCreat
                     </div>
                 </div>
             </div>
+
+            {/* Documents Word générés */}
+            {documents.length > 0 && (
+                <div className="mb-8">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <FileText className="w-5 h-5 text-orange-500" />
+                        Documents Word générés
+                    </h2>
+                    <ul className="bg-white rounded-xl border border-slate-100 divide-y divide-slate-100">
+                        {documents.map((doc) => (
+                            <li key={doc.id} className="flex items-center justify-between px-4 py-3 hover:bg-slate-50">
+                                <span className="text-gray-700 truncate">{doc.filename}</span>
+                                <span className="text-sm text-gray-500 mr-3">
+                                    {new Date(doc.created_at).toLocaleDateString()}
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={() => handleDownloadDocument(doc)}
+                                    className="text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1.5"
+                                >
+                                    <Download className="w-4 h-4" />
+                                    Télécharger
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
 
             {/* Dossiers List */}
             <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">

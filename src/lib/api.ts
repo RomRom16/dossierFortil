@@ -100,6 +100,13 @@ export type ProfileWithDetails = Profile & {
   educations: Education[];
 };
 
+export type CandidateDocument = {
+  id: string;
+  candidate_id: string;
+  filename: string;
+  created_at: string;
+};
+
 export type Candidate = {
   id: string;
   manager_id: string;
@@ -159,6 +166,26 @@ export async function apiDeleteCandidate(user: AppUser, id: string) {
   return res.json();
 }
 
+export async function apiListCandidateDocuments(user: AppUser, candidateId: string): Promise<CandidateDocument[]> {
+  const res = await fetch(`${API_URL}/candidates/${candidateId}/documents`, {
+    headers: authHeaders(user),
+  });
+  if (!res.ok) throw new Error('Erreur lors du chargement des documents');
+  return res.json();
+}
+
+export async function apiDownloadDocument(user: AppUser, documentId: string): Promise<Blob> {
+  const res = await fetch(`${API_URL}/documents/${documentId}`, {
+    headers: {
+      'x-user-id': user.id,
+      'x-user-email': user.email,
+      'x-user-name': user.full_name,
+    },
+  });
+  if (!res.ok) throw new Error('Document introuvable ou accès refusé');
+  return res.blob();
+}
+
 export async function apiDeleteProfile(user: AppUser, id: string) {
   const res = await fetch(`${API_URL}/profiles/${id}`, {
     method: 'DELETE',
@@ -197,11 +224,11 @@ export async function apiParseCv(text: string) {
   return res.json();
 }
 
-export async function apiGenerateDocx(user: AppUser, file: File): Promise<Blob> {
+export async function apiGenerateDocx(user: AppUser, file: File, candidateId: string): Promise<Blob> {
   const formData = new FormData();
   formData.append('cv', file);
 
-  const res = await fetch(`${API_URL}/process-cv-docx`, {
+  const res = await fetch(`${API_URL}/process-cv-docx?candidate_id=${encodeURIComponent(candidateId)}`, {
     method: 'POST',
     headers: {
       'x-user-id': user.id,
