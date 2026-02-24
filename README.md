@@ -71,30 +71,44 @@ Ouvrir **http://localhost:5173** dans le navigateur. L’extraction par Gemini e
 
 ---
 
-### Lancement avec Docker
-Le moyen le plus simple de lancer l'application complète est d'utiliser Docker Compose. Cela démarrera le frontend, le backend, le service d'analyse de CV (FastAPI) et n8n.
+### Lancement avec Docker (n8n inclus)
+
+Le moyen le plus simple de lancer l'application complète (frontend, backend, FastAPI, n8n) :
 
 ```bash
+# À la racine du projet
+cp .env.example .env
+# Éditer .env : AI_API_KEY (Gemini), VITE_SUPABASE_*, OPENAI_API_KEY si besoin
+
 docker compose up --build -d
 ```
 
-Lance **tous** les services (frontend, backend, n8n, FastAPI). La génération « Générer depuis CV » a besoin de **n8n** et de **FastAPI** (fortil-fastapi) ; si l’un des deux est arrêté, vous obtiendrez une erreur du type « service indisponible ».
+**URLs :**
+- **Frontend** : http://localhost:8080
+- **Backend API** : http://localhost:4000
+- **n8n** : http://localhost:5678
+- **FastAPI (CV2DOC)** : exposé en interne sur le réseau Docker (port 8000)
 
-- **Frontend** : `http://localhost:8080` (Interface utilisateur principale)
-- **Backend API** : `http://localhost:4000`
-- **n8n** : `http://localhost:5678` (Workflow automation)
+**Pour que « Générer depuis CV » fonctionne avec n8n :**
 
-### Utilisation de CV2DOC
-Pour générer un dossier de compétences directement depuis un CV :
-1. Connectez-vous à la plateforme.
+1. **Activer le webhook n8n dans le `.env`** (pour Docker, le backend doit appeler n8n) :
+   ```bash
+   N8N_WEBHOOK_URL_DOCX=http://fortil-n8n:5678/webhook/cv2doc-docx
+   ```
+   Puis redémarrer le backend : `docker compose restart backend`
 
-**En Docker**, la génération DOCX passe par n8n par défaut (`http://fortil-n8n:5678/webhook/cv2doc-docx`). Importez et activez le workflow [CV2DOC-webhook-docx](CV2DOC-n8n-flow-main/n8n_workflows/) dans n8n. Pour désactiver : `N8N_WEBHOOK_URL_DOCX=` dans le `.env`.  
-**En local (sans Docker), optionnel :** définissez `N8N_WEBHOOK_URL_DOCX` (ex. `http://localhost:5678/webhook/cv2doc-docx`) dans le `.env` et importez/activez le workflow [CV2DOC-webhook-docx](CV2DOC-n8n-flow-main/n8n_workflows/) dans n8n. Chaque clic sur « Générer depuis CV » déclenchera alors le workflow n8n. Voir [CV2DOC-n8n-flow-main/README.md](CV2DOC-n8n-flow-main/README.md).
+2. **Configurer n8n**  
+   - Ouvrir http://localhost:5678 (n8n).  
+   - Importer le workflow : **Settings** (engrenage) → **Import from File** → choisir  
+     `CV2DOC-n8n-flow-main/n8n_workflows/CV2DOC-webhook-docx (trigger depuis app FORTIL).json`  
+   - Dans le nœud **HTTP Request**, vérifier que l’URL est :  
+     **`http://fastapi-app:8000/process_cv/`** (avec le `/process_cv/` à la fin).  
+   - **Activer** le workflow (toggle **Active** en haut à droite) et **Sauvegarder**.
 
-2. Allez sur la fiche d'un **Candidat**.
-3. Cliquez sur le bouton **"Générer depuis CV"**.
-4. Sélectionnez un fichier **PDF**.
-5. Le système extraira les données et vous proposera de télécharger le fichier **.docx** généré.
+3. Depuis l’app (http://localhost:8080), sur la fiche d’un candidat, cliquer sur **« Générer depuis CV »**, choisir un PDF : le flux passe par n8n → FastAPI → DOCX téléchargé et enregistré en BDD.
+
+**Sans n8n (backend appelle FastAPI directement)**  
+Dans le `.env`, commenter ou vider `N8N_WEBHOOK_URL_DOCX`, puis `docker compose restart backend`. La génération DOCX ira directement à FastAPI sans passer par n8n.
 
 ## 📂 Structure du Projet
 

@@ -42,6 +42,7 @@ services:
       - "4000:4000"
     volumes:
       - ./backend/profiles.db:/app/profiles.db
+      - backend_uploads:/app/uploads
     depends_on:
       - fastapi-app
       - n8n
@@ -67,6 +68,7 @@ services:
 
 volumes:
   n8n_data:
+  backend_uploads:
 
 networks:
   fortil-network:
