@@ -443,10 +443,11 @@ app.get('/api/candidates', authMiddleware, (req, res) => {
     candidates = [];
   }
 
-  // Enrichir avec nombre de dossiers
+  // Enrichir avec nombre de dossiers + documents Word
   const result = candidates.map(c => {
-    const count = db.prepare('SELECT count(*) as count FROM profiles WHERE candidate_id = ?').get(c.id).count;
-    return { ...c, dossier_count: count };
+    const profileCount = db.prepare('SELECT count(*) as count FROM profiles WHERE candidate_id = ?').get(c.id).count;
+    const docCount = db.prepare('SELECT count(*) as count FROM candidate_documents WHERE candidate_id = ?').get(c.id).count;
+    return { ...c, dossier_count: profileCount + docCount };
   });
 
   res.json(result);
@@ -525,6 +526,23 @@ app.delete('/api/candidates/:id', authMiddleware, (req, res) => {
 
   db.prepare('DELETE FROM candidates WHERE id = ?').run(req.params.id);
   res.json({ success: true });
+});
+
+// GET documents list for a candidate (must be before GET /api/candidates/:id)
+app.get('/api/candidates/:id/documents', authMiddleware, (req, res) => {
+  try {
+    const candidate = db.prepare('SELECT * FROM candidates WHERE id = ?').get(req.params.id);
+    if (!candidate) return res.status(404).json({ error: 'Candidat introuvable' });
+    const roles = db.prepare('select role from user_roles where user_id = ?').all(req.user.id).map(r => r.role);
+    if (!roles.includes('admin') && candidate.manager_id !== req.user.id) {
+      return res.status(403).json({ error: 'Accès interdit' });
+    }
+    const docs = db.prepare('SELECT id, candidate_id, filename, created_at FROM candidate_documents WHERE candidate_id = ? ORDER BY created_at DESC').all(req.params.id);
+    res.json(docs);
+  } catch (e) {
+    console.error('[GET /api/candidates/:id/documents]', e);
+    res.status(500).json({ error: 'Erreur lors du chargement des documents' });
+  }
 });
 
 // GET candidat details + ses dossiers
@@ -874,18 +892,6 @@ app.post('/api/parse-cv-gemini', authMiddleware, upload.single('cv'), async (req
       try { fs.unlinkSync(req.file.path); } catch (_) {}
     }
   }
-});
-
-// GET documents list for a candidate
-app.get('/api/candidates/:id/documents', authMiddleware, (req, res) => {
-  const candidate = db.prepare('SELECT * FROM candidates WHERE id = ?').get(req.params.id);
-  if (!candidate) return res.status(404).json({ error: 'Candidat introuvable' });
-  const roles = db.prepare('select role from user_roles where user_id = ?').all(req.user.id).map(r => r.role);
-  if (!roles.includes('admin') && candidate.manager_id !== req.user.id) {
-    return res.status(403).json({ error: 'Accès interdit' });
-  }
-  const docs = db.prepare('SELECT id, candidate_id, filename, created_at FROM candidate_documents WHERE candidate_id = ? ORDER BY created_at DESC').all(req.params.id);
-  res.json(docs);
 });
 
 // GET download a document by id

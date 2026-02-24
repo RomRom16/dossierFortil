@@ -49,8 +49,12 @@ export function CandidateDetails({ candidateId, onBack, onSelectDossier, onCreat
             document.body.removeChild(a);
 
             // Refresh documents list (saved in BDD)
-            const docs = await apiListCandidateDocuments(user, candidateId);
-            setDocuments(docs);
+            try {
+                const docs = await apiListCandidateDocuments(user, candidateId);
+                setDocuments(docs);
+            } catch (_) {
+                // Ignore: document was saved and downloaded, list refresh is optional
+            }
 
             // Reset input
             if (fileInputRef.current) fileInputRef.current.value = '';
@@ -338,57 +342,50 @@ export function CandidateDetails({ candidateId, onBack, onSelectDossier, onCreat
                             </div>
                             <div>
                                 <p className="text-xs text-gray-500 uppercase font-semibold">Dossiers</p>
-                                <p className="text-gray-900 font-medium">{data.profiles.length} actifs</p>
+                                <p className="text-gray-900 font-medium">{data.profiles.length + documents.length}</p>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Documents Word générés */}
-            {documents.length > 0 && (
-                <div className="mb-8">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <FileText className="w-5 h-5 text-orange-500" />
-                        Documents Word générés
-                    </h2>
-                    <ul className="bg-white rounded-xl border border-slate-100 divide-y divide-slate-100">
-                        {documents.map((doc) => (
-                            <li key={doc.id} className="flex items-center justify-between px-4 py-3 hover:bg-slate-50">
-                                <span className="text-gray-700 truncate">{doc.filename}</span>
-                                <span className="text-sm text-gray-500 mr-3">
-                                    {new Date(doc.created_at).toLocaleDateString()}
-                                </span>
-                                <button
-                                    type="button"
-                                    onClick={() => handleDownloadDocument(doc)}
-                                    className="text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1.5"
-                                >
-                                    <Download className="w-4 h-4" />
-                                    Télécharger
-                                </button>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            )}
-
-            {/* Dossiers List */}
+            {/* Dossiers de compétences et documents Word */}
             <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                 <Briefcase className="w-5 h-5 text-orange-500" />
                 Dossiers de compétences
             </h2>
 
-            {data.profiles.length === 0 ? (
+            {documents.length > 0 && (
+                <ul className="bg-white rounded-xl border border-slate-100 divide-y divide-slate-100 mb-6">
+                    {documents.map((doc) => (
+                        <li key={doc.id} className="flex items-center justify-between px-4 py-3 hover:bg-slate-50">
+                            <span className="text-gray-700 truncate">{doc.filename}</span>
+                            <span className="text-sm text-gray-500 mr-3">
+                                {new Date(doc.created_at).toLocaleDateString()}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => handleDownloadDocument(doc)}
+                                className="text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1.5"
+                            >
+                                <Download className="w-4 h-4" />
+                                Télécharger
+                            </button>
+                        </li>
+                    ))}
+                </ul>
+            )}
+
+            {data.profiles.length === 0 && documents.length === 0 ? (
                 <div className="text-center py-12 bg-white rounded-xl border border-dashed border-gray-300">
-                    <p className="text-gray-500">Aucun dossier créé pour ce candidat.</p>
+                    <p className="text-gray-500">Aucun dossier ni document pour ce candidat.</p>
                     {canManage && (
                         <button onClick={() => onCreateDossier(data.full_name)} className="text-orange-600 font-medium mt-2 hover:underline">
                             Créer le premier dossier
                         </button>
                     )}
                 </div>
-            ) : (
+            ) : data.profiles.length > 0 ? (
                 <div className="space-y-6">
                     {data.profiles.map(p => (
                         <DossierCard
@@ -399,7 +396,7 @@ export function CandidateDetails({ candidateId, onBack, onSelectDossier, onCreat
                         />
                     ))}
                 </div>
-            )}
+            ) : null}
         </div>
     );
 }
