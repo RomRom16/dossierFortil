@@ -4,7 +4,7 @@
   "secteur_d_activité": "INFO NON DISPONIBLE",
   "expertises": [
     {
-      "titre_expertise": "Développement Web",
+      "titre_expertise": "Développement",
       "expertises": "Php (Natif, Laravel)\nJS (ReactJs, React native, NodeJs)\nHTML/CSS (Tailwind, Bootstrap)\nC# / .NET\nDB (PostgreSQL, MySQL, Oracle, MongoDB)\nReact Native, Android Java, Flutter, PWA",
       "niveau_expertise": "Autonome"
     },
@@ -36,7 +36,7 @@
   "langues": [
     {
       "langue": "Anglais",
-      "niveau": "Intermédiaire"
+      "niveau": "INFO NON DÉTAILLÉE"
     }
   ],
   "expériences": [
@@ -48,9 +48,9 @@
       "programme": "Alternance développeur Web et chef de projet",
       "poste": "Alternance développeur Web et chef de projet",
       "objectif": "Alternance dans la cellule de développement de la DNSI de l'Eurométropole de Strasbourg : Chef de projet et développeur d'une application de saisie d'indicateurs pour les espaces verts, chef de projet dans l'étude des développements en mobilité au sein de la DNSI avec étude des besoins et réalisation de POC concernant les développements PWA.",
-      "activités": "INFO NON DÉTAILLÉE",
-      "environnement_technique": "INFO NON DÉTAILLÉE",
-      "expertise_mobilisées": "INFO NON DÉTAILLÉE"
+      "activités": "INFO NON DISPONIBLE",
+      "environnement_technique": "INFO NON DISPONIBLE",
+      "expertise_mobilisées": "INFO NON DISPONIBLE"
     },
     {
       "début": "septembre 2022",
@@ -60,9 +60,9 @@
       "programme": "Alternance développeur Web",
       "poste": "Alternance développeur Web",
       "objectif": "Alternance dans la cellule de développement de la DNSI de l'Eurométropole de Strasbourg : ajout de fonctionnalités dans une application de gestion d'alerte, maintenance d'applications métiers, création d'une application mobile pour l'organigramme de l'Eurométropole de Strasbourg.",
-      "activités": "INFO NON DÉTAILLÉE",
-      "environnement_technique": "INFO NON DÉTAILLÉE",
-      "expertise_mobilisées": "INFO NON DÉTAILLÉE"
+      "activités": "INFO NON DISPONIBLE",
+      "environnement_technique": "INFO NON DISPONIBLE",
+      "expertise_mobilisées": "INFO NON DISPONIBLE"
     },
     {
       "début": "avril 2022",
@@ -72,9 +72,9 @@
       "programme": "Stage FullStack",
       "poste": "Stage FullStack",
       "objectif": "Stage de 10 semaines à l'Eurométropole de Strasbourg : Création d'un formulaire pour la récolte d'indicateurs sur les chantiers de l'Eurométropole (PHP, PostgreSQL/MCD, JS, CSS).",
-      "activités": "INFO NON DÉTAILLÉE",
-      "environnement_technique": "INFO NON DÉTAILLÉE",
-      "expertise_mobilisées": "INFO NON DÉTAILLÉE"
+      "activités": "INFO NON DISPONIBLE",
+      "environnement_technique": "INFO NON DISPONIBLE",
+      "expertise_mobilisées": "INFO NON DISPONIBLE"
     },
     {
       "début": "2016",
@@ -83,10 +83,10 @@
       "secteur_activité": "INFO NON DISPONIBLE",
       "programme": "Ingénieur son",
       "poste": "Ingénieur son",
-      "objectif": "Ingénieur son pour l'association \"Marché paysan\" de Dambach-la-ville",
-      "activités": "INFO NON DÉTAILLÉE",
-      "environnement_technique": "INFO NON DÉTAILLÉE",
-      "expertise_mobilisées": "INFO NON DÉTAILLÉE"
+      "objectif": "Ingénieur son pour l'association \"Marché paysan\" de Dambach-la-ville.",
+      "activités": "INFO NON DISPONIBLE",
+      "environnement_technique": "INFO NON DISPONIBLE",
+      "expertise_mobilisées": "INFO NON DISPONIBLE"
     }
   ]
 }
