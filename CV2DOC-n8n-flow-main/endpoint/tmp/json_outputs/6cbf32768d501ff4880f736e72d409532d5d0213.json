@@ -1,0 +1,242 @@
+{
+  "nom": "Florian Gomes",
+  "téléphone": "+33781930420",
+  "secteur_d_activité": "Développement SI",
+  "contexte": "Développeur Java/Spring/Angular avec une expérience significative dans le développement logiciel. Il possède des compétences solides en langages de programmation, bases de données et frameworks. Son objectif professionnel est de continuer à évoluer dans le domaine du développement.",
+  "diplômes": [
+    {
+      "intitule": "Master MIAGE",
+      "date": "Septembre 2020",
+      "école": "FST (UHA) - Mulhouse, France"
+    },
+    {
+      "intitule": "Licence Professionnelle Informatique CDED",
+      "date": "Septembre 2018",
+      "école": "IUT Robert Schuman – Illkirch, France"
+    },
+    {
+      "intitule": "DUT Informatique",
+      "date": "Septembre 2017",
+      "école": "IUT Robert Schuman – Illkirch, France"
+    },
+    {
+      "intitule": "Baccalauréat S Spécialité Sciences de l'ingénieur",
+      "date": "Juin 2015",
+      "école": "Lycée Blaise Pascal – Colmar, France"
+    }
+  ],
+  "expertises": [
+    {
+      "titre_expertise": "Développement Java/Spring",
+      "expertises": "- Développement d'outils internes\n- Conception et développement d'applications\n- Correction d'anomalies\n- Développement de nouvelles fonctionnalités",
+      "niveau_expertise": "Expert"
+    },
+    {
+      "titre_expertise": "Développement Angular",
+      "expertises": "- Développement de modules d'exposition\n- Intégration de nouvelles gammes de caméra\n- Coordination de la refonte de la stack technique",
+      "niveau_expertise": "Autonome"
+    },
+    {
+      "titre_expertise": "Bases de données",
+      "expertises": "- OracleDB\n- MySQL\n- PostgreSQL\n- MongoDB",
+      "niveau_expertise": "Autonome"
+    },
+    {
+      "titre_expertise": "Systèmes d'exploitation",
+      "expertises": "- Windows\n- Linux (Debian, Ubuntu)",
+      "niveau_expertise": "Autonome"
+    }
+  ],
+  "savoir_etre": [
+    {
+      "compétence": "Analyse et documentation"
+    },
+    {
+      "compétence": "Conception technique"
+    },
+    {
+      "compétence": "Développement d'outils"
+    },
+    {
+      "compétence": "Suivi de logs"
+    },
+    {
+      "compétence": "Correction d'anomalies"
+    },
+    {
+      "compétence": "Développement de nouvelles fonctionnalités"
+    },
+    {
+      "compétence": "Intégration"
+    },
+    {
+      "compétence": "Correction de problèmes de synchronisation"
+    },
+    {
+      "compétence": "Développement d'un outil interne"
+    },
+    {
+      "compétence": "Accompagnement et formation"
+    },
+    {
+      "compétence": "Relecture et validation"
+    },
+    {
+      "compétence": "Coordination"
+    },
+    {
+      "compétence": "Gestion des doublons"
+    },
+    {
+      "compétence": "Anonymisation"
+    },
+    {
+      "compétence": "Investissement pour mettre à disposition une plateforme Big Data"
+    },
+    {
+      "compétence": "Intégration de composants"
+    },
+    {
+      "compétence": "Vérification et correction de la configuration"
+    },
+    {
+      "compétence": "Mise en place et maintenance d'une infrastructure de développement"
+    },
+    {
+      "compétence": "Rédaction de tutoriels"
+    },
+    {
+      "compétence": "Support pour la communauté"
+    },
+    {
+      "compétence": "Organisation d'événements"
+    },
+    {
+      "compétence": "Coordination et suivi du projet"
+    }
+  ],
+  "langues": [
+    {
+      "langue": "Anglais",
+      "niveau": "Courant"
+    },
+    {
+      "langue": "Espagnol",
+      "niveau": "INFO NON DISPONIBLE"
+    },
+    {
+      "langue": "Allemand",
+      "niveau": "INFO NON DISPONIBLE"
+    }
+  ],
+  "expériences": [
+    {
+      "début": "Juillet 2025",
+      "fin": "Novembre 2025",
+      "société": "France Travail",
+      "secteur_activité": "Développement SI",
+      "programme": "Projet nouvelle « Lib d'authentification »",
+      "poste": "Développeur SI",
+      "objectif": "INFO NON DÉTAILLÉE",
+      "activités": "- Analyse et documentation de l'existant\n- Conception du nouveau socle technique pour l'authentification des applications de France Travail\n- Création d'outils pour aider au développement et interagir avec les serveurs AM\n- Utilisation de l'IA pour faciliter l'analyse d'un sujet et la création de snippet de code",
+      "environnement_technique": "- Python\n- OAuth\n- OIDC\n- Git\n- Docker\n- Kubernetes",
+      "expertise_mobilisées": "- Stack technique : Python, OAuth, OIDC, Git, Docker, Kubernetes"
+    },
+    {
+      "début": "Janvier 2021",
+      "fin": "Juillet 2025",
+      "société": "CGI",
+      "secteur_activité": "Consultant",
+      "programme": "Projet Helios",
+      "poste": "INFO NON DÉTAILLÉE",
+      "objectif": "INFO NON DÉTAILLÉE",
+      "activités": "- Application de gestion de l'activité de vidéo-surveillance du client\n- Suivi de logs, correction d'anomalie, développement de nouvelles fonctionnalités\n- Domaines métiers : Hotline client (HLC), Service technico-terrain technicien (STTT)\n- Intégration de la gestion du matériel d'un concurrent dans nos process.\n- Intégration d'une nouvelle gamme de caméra en collaboration avec les équipes web et mobile\n- Correction des problèmes de synchronisation des missions entre l'ancien et le nouveau SI (en cours)\n- Développement d'un outil interne pour simuler proprement une mission d'installation\n- Accompagnement et formation de 6 nouveaux arrivants\n- Relecture et validation des conceptions et des pull requests",
+      "environnement_technique": "- Java\n- Spring\n- JavaFx\n- OracleDB\n- Git",
+      "expertise_mobilisées": "- Stack technique : Java, Spring, JavaFx, OracleDB, Git | Équipe de 8 personnes\n- Concepts manipulés : CQRS, micro-services, Event Driven"
+    },
+    {
+      "début": "Septembre 2018",
+      "fin": "Septembre 2020",
+      "société": "EES - CLEMESSY",
+      "secteur_activité": "Mulhouse",
+      "programme": "Projet Artic",
+      "poste": "Apprenti",
+      "objectif": "INFO NON DÉTAILLÉE",
+      "activités": "- Application de consolidant les fiches produits fournisseurs en article racine\n- Implémentation de fonctionnalités, tests, correction d'anomalie, support\n- Développement du module de demande de référence d'un produit\n- Développement d'une partie de l'algorithme d'intégration des fiches produit.\n- Développement d'une partie de la stack technique utilisée sur les contrôleurs REST",
+      "environnement_technique": "- Java\n- Spring\n- Angular\n- PostgreSQL\n- Git",
+      "expertise_mobilisées": "- Stack technique : Java, Spring, Angular, PostgreSQL, Git | Équipe : 14 personnes"
+    },
+    {
+      "début": "Septembre 2018",
+      "fin": "Septembre 2020",
+      "société": "INFO NON DISPONIBLE",
+      "secteur_activité": "INFO NON DISPONIBLE",
+      "programme": "Projet Maraudes",
+      "poste": "INFO NON DISPONIBLE",
+      "objectif": "INFO NON DÉTAILLÉE",
+      "activités": "- Projet de refonte de l'application de suivi de l'activité Maraudes de la RATP\n- Développement des modules de gestion des doublons et d'anonymisation",
+      "environnement_technique": "- Java\n- Spring\n- Angular\n- PostgreSQL\n- Git",
+      "expertise_mobilisées": "- Stack technique : Java, Spring, Angular, PostgreSQL, Git | Équipe : 7 personnes"
+    },
+    {
+      "début": "Septembre 2018",
+      "fin": "Septembre 2020",
+      "société": "INFO NON DISPONIBLE",
+      "secteur_activité": "INFO NON DISPONIBLE",
+      "programme": "Projet GTC-Web",
+      "poste": "INFO NON DISPONIBLE",
+      "objectif": "INFO NON DÉTAILLÉE",
+      "activités": "- Projet de refonte d'une application de site industriel pour PSA\n- Refonte du module « fil de l’eau » apportant des logs orientés métier aux opérateurs",
+      "environnement_technique": "- Java\n- Spring\n- ReactJS\n- PostgreSQL\n- Git",
+      "expertise_mobilisées": "- Stack technique : Java, Spring, ReactJS, PostgreSQL, Git | Équipe : 8 personnes"
+    },
+    {
+      "début": "Septembre 2018",
+      "fin": "Septembre 2020",
+      "société": "INFO NON DISPONIBLE",
+      "secteur_activité": "INFO NON DISPONIBLE",
+      "programme": "Projet Smart Forest",
+      "poste": "INFO NON DISPONIBLE",
+      "objectif": "INFO NON DÉTAILLÉE",
+      "activités": "- Projet d'investissement pour mettre à disposition une plateforme Big Data pour l'industrie\n- Intégration de composants conçus pour de grands volumes de données\n- Vérification et correction de la configuration des micro-services",
+      "environnement_technique": "- Java\n- Spring\n- Angular\n- PostgreSQL\n- MongoDB\n- Git",
+      "expertise_mobilisées": "- Stack technique : Java, Spring, Angular, PostgreSQL, MongoDB, Git | Équipe : 10 personnes"
+    },
+    {
+      "début": "Mars 2016",
+      "fin": "Aujourd'hui",
+      "société": "INFO NON DISPONIBLE",
+      "secteur_activité": "Administration d'un serveur Debian et d'un homelab",
+      "programme": "INFO NON DISPONIBLE",
+      "poste": "INFO NON DISPONIBLE",
+      "objectif": "INFO NON DÉTAILLÉE",
+      "activités": "- Mise en place et maintenance d'une infrastructure de développement",
+      "environnement_technique": "INFO NON DISPONIBLE",
+      "expertise_mobilisées": "INFO NON DISPONIBLE"
+    },
+    {
+      "début": "Août 2014",
+      "fin": "Août 2024",
+      "société": "INFO NON DISPONIBLE",
+      "secteur_activité": "Rédacteur sur minecraftforgefrance.fr",
+      "programme": "INFO NON DISPONIBLE",
+      "poste": "INFO NON DISPONIBLE",
+      "objectif": "INFO NON DÉTAILLÉE",
+      "activités": "- Rédaction de tutoriels, traduction de ressources, support pour la communauté, Organisation d'événements",
+      "environnement_technique": "INFO NON DISPONIBLE",
+      "expertise_mobilisées": "INFO NON DISPONIBLE"
+    },
+    {
+      "début": "Septembre 2012",
+      "fin": "Juin 2013",
+      "société": "INFO NON DISPONIBLE",
+      "secteur_activité": "Co-dirigeant de la mini-entreprise E'nov",
+      "programme": "INFO NON DISPONIBLE",
+      "poste": "INFO NON DISPONIBLE",
+      "objectif": "INFO NON DÉTAILLÉE",
+      "activités": "- Coordination et suivi du projet, 1ère place au championnat européen d'EPA",
+      "environnement_technique": "INFO NON DISPONIBLE",
+      "expertise_mobilisées": "INFO NON DISPONIBLE"
+    }
+  ]
+}

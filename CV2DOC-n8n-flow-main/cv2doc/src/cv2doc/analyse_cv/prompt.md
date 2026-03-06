@@ -15,6 +15,16 @@ Today = {date} (use only for ongoing work duration).
 - Use **keywords or short keyphrases only** for skills and competencies.
 - Use full sentences **ONLY inside** experience or project descriptions.
 
+## Diplômes / formations
+- Extract each diploma or certification with: **intitule** (title), **date** (year or month-year), **école** (institution).
+- For any missing field (intitule, date, or école), use **"info à détailler"**.
+- If no education section at all, output one diploma with all fields set to "info à détailler".
+
+## Contexte (résumé du CV)
+- Produce a **short summary** (2 to 4 sentences) of the CV for the "contexte" field.
+- Include: profile type, years of experience, main domains, and professional objective if stated.
+- Base it strictly on information present in the CV. Do not invent.
+
 
 ## Language detection rules
 - Determine a language level **only if** it is explicitly present as text, CEFR (A1–C2), or a GRAPHICAL INDICATOR.

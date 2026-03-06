@@ -16,6 +16,12 @@ class Language(BaseModel):
     level: str = Field(alias="niveau", description="Niveau: Novice (A1 - A2), Intermédiaire (B1 - B2), Courant (C1 - C2), Maternelle", examples=["Novice", "Intermédiaire", "Courant", "Maternelle"])
 
 
+class Diploma(BaseModel):
+    title: str = Field(alias="intitule", description="Intitulé du diplôme ou formation.", examples=["Master Informatique", "Licence Pro Développement Web"])
+    date: str = Field(alias="date", description="Date d'obtention (année ou mois année).", examples=["2022", "Juin 2021"])
+    school: str = Field(alias="école", description="Établissement ou école.", examples=["Université de Strasbourg", "CNAM"])
+
+
 class Experience(BaseModel):
     start: str = Field(alias="début", description="Mois Année", examples=["Janvier 2022", "2019"])
     end: str = Field(alias="fin", description="Mois Année ou 'En cours'.", examples=["En cours", "2022", "Décembre 2023"])
@@ -43,7 +49,13 @@ class CVSchema(BaseModel):
         alias="secteur_d_activité",
         description="Secteur d’activité principal du candidat.",
     )
+    contexte: str = Field(
+        alias="contexte",
+        description="Résumé synthétique du CV en 2 à 4 phrases : profil, années d’expérience, domaines clés, objectif professionnel. Basé uniquement sur les informations du CV.",
+        examples=["Consultant IT avec 5 ans d’expérience en développement et gestion de projet. Domaines : banque, assurance. Recherche un poste de lead technique."],
+    )
 
+    diplômes: list[Diploma] = Field(default_factory=list, alias="diplômes")
     expertises: list[Expertise] = Field(default_factory=list, alias="expertises")
     savoir_etre: list[SavoirEtre] = Field(default_factory=list, alias="savoir_etre")
     languages: list[Language] = Field(default_factory=list, alias="langues")

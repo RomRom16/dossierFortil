@@ -1,0 +1,147 @@
+{
+  "nom": "Carthic SEKAR",
+  "téléphone": "+33659354947",
+  "secteur_d_activité": "Informatique",
+  "contexte": "Testeur QA spécialisé en tests fonctionnels et automatisés, avec une expérience dans la détection de bugs et l'amélioration de la qualité logicielle. Il a travaillé sur divers projets, notamment dans l'analyse des spécifications, la préparation et l'exécution de tests, ainsi que l'automatisation des tests. Son objectif est de continuer à contribuer à la qualité des logiciels.",
+  "diplômes": [
+    {
+      "intitule": "MSc Pro, Développement Logiciel",
+      "date": "2022",
+      "école": "EPITECH"
+    },
+    {
+      "intitule": "Développeur Cobol certifié",
+      "date": "2018",
+      "école": "Université Haute Alsace"
+    }
+  ],
+  "expertises": [
+    {
+      "titre_expertise": "Tests fonctionnels",
+      "expertises": "- Réalisation des tests fonctionnels\n- Analyse des spécifications fonctionnelles",
+      "niveau_expertise": "Expert"
+    },
+    {
+      "titre_expertise": "Tests d'automatisation",
+      "expertises": "- Automatisation des tests\n- Proof of concept pour l'automatisation des tests",
+      "niveau_expertise": "Autonome"
+    },
+    {
+      "titre_expertise": "Gestion des anomalies",
+      "expertises": "- Suivi des anomalies\n- Exécuter des tests et enregistrer les anomalies dans HP ALM",
+      "niveau_expertise": "Autonome"
+    },
+    {
+      "titre_expertise": "Cobol",
+      "expertises": "- Rédaction de scripts Cobol sous Z/OS pour la gestion de catalogues",
+      "niveau_expertise": "Autonome"
+    }
+  ],
+  "savoir_etre": [
+    {
+      "compétence": "Autonome"
+    },
+    {
+      "compétence": "Rigoureux"
+    }
+  ],
+  "langues": [],
+  "expériences": [
+    {
+      "début": "06/2023",
+      "fin": "Présent",
+      "société": "Projet personnel et solidaire",
+      "secteur_activité": "INFO NON DISPONIBLE",
+      "programme": "INFO NON DISPONIBLE",
+      "poste": "INFO NON DISPONIBLE",
+      "objectif": "INFO NON DISPONIBLE",
+      "activités": "- Apprentissage autodidacte (projets personnels)\n- Suivi de projets et distribution de matériel",
+      "environnement_technique": "INFO NON DISPONIBLE",
+      "expertise_mobilisées": "INFO NON DISPONIBLE"
+    },
+    {
+      "début": "02/2023",
+      "fin": "05/2023",
+      "société": "Sopra Steria / Caveo",
+      "secteur_activité": "INFO NON DISPONIBLE",
+      "programme": "INFO NON DISPONIBLE",
+      "poste": "Testeur QA",
+      "objectif": "INFO NON DISPONIBLE",
+      "activités": "- Analyse des spécifications fonctionnelles et rédaction des cas de tests\n- Préparation des jeux de données et exécution des tests fonctionnels\n- Exécution des tests d'API",
+      "environnement_technique": "INFO NON DISPONIBLE",
+      "expertise_mobilisées": "INFO NON DISPONIBLE"
+    },
+    {
+      "début": "01/2022",
+      "fin": "08/2022",
+      "société": "LDE",
+      "secteur_activité": "Alsace",
+      "programme": "INFO NON DISPONIBLE",
+      "poste": "Testeur QA & AMOA",
+      "objectif": "INFO NON DISPONIBLE",
+      "activités": "- Participation aux phases d'analyse\n- Tests en pré-production\n- Écriture et suivi des tests fonctionnels\n- Proof of concept pour l'automatisation des tests",
+      "environnement_technique": "INFO NON DISPONIBLE",
+      "expertise_mobilisées": "INFO NON DISPONIBLE"
+    },
+    {
+      "début": "01/2021",
+      "fin": "10/2021",
+      "société": "Dir IPS",
+      "secteur_activité": "Île-de-France",
+      "programme": "INFO NON DISPONIBLE",
+      "poste": "Testeur QA & AMOA",
+      "objectif": "INFO NON DISPONIBLE",
+      "activités": "- Réalisation des tests fonctionnels\n- Suivi des anomalies\n- Automatisation des tests",
+      "environnement_technique": "INFO NON DISPONIBLE",
+      "expertise_mobilisées": "INFO NON DISPONIBLE"
+    },
+    {
+      "début": "11/2018",
+      "fin": "10/2020",
+      "société": "Projet personnel et testing",
+      "secteur_activité": "INFO NON DISPONIBLE",
+      "programme": "INFO NON DISPONIBLE",
+      "poste": "INFO NON DISPONIBLE",
+      "objectif": "INFO NON DISPONIBLE",
+      "activités": "- Tests de logiciels (freelance)\n- Apprentissage autodidacte (projets personnels)",
+      "environnement_technique": "INFO NON DISPONIBLE",
+      "expertise_mobilisées": "INFO NON DISPONIBLE"
+    },
+    {
+      "début": "08/2018",
+      "fin": "10/2018",
+      "société": "Société Générale / GFI Informatique",
+      "secteur_activité": "INFO NON DISPONIBLE",
+      "programme": "INFO NON DISPONIBLE",
+      "poste": "Homologateur",
+      "objectif": "INFO NON DISPONIBLE",
+      "activités": "- Exécuter des tests et enregistrer les anomalies dans HP ALM",
+      "environnement_technique": "INFO NON DISPONIBLE",
+      "expertise_mobilisées": "INFO NON DISPONIBLE"
+    },
+    {
+      "début": "02/2018",
+      "fin": "05/2018",
+      "société": "Technology & Strategy / Proxiad",
+      "secteur_activité": "Strasbourg",
+      "programme": "Formation Mainframe",
+      "poste": "INFO NON DISPONIBLE",
+      "objectif": "INFO NON DISPONIBLE",
+      "activités": "- Rédaction de scripts Cobol sous Z/OS pour la gestion de catalogues",
+      "environnement_technique": "INFO NON DISPONIBLE",
+      "expertise_mobilisées": "INFO NON DISPONIBLE"
+    },
+    {
+      "début": "01/2016",
+      "fin": "01/2018",
+      "société": "PSA / Altran / Set-Way",
+      "secteur_activité": "Montbéliard",
+      "programme": "Test et validation",
+      "poste": "INFO NON DISPONIBLE",
+      "objectif": "INFO NON DISPONIBLE",
+      "activités": "- Analyse des spécifications fonctionnelles et techniques\n- Tests unitaires\n- Suivi des corrections d'anomalies\n- Participation aux recettes",
+      "environnement_technique": "INFO NON DISPONIBLE",
+      "expertise_mobilisées": "INFO NON DISPONIBLE"
+    }
+  ]
+}
